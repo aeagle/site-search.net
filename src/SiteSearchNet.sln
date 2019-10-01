@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29215.179
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Core", "SiteSearch.Core\SiteSearch.Core.csproj", "{F454A313-D1BB-4CAD-BC08-2CB20EF483DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Lucene", "SiteSearch.Lucene\SiteSearch.Lucene.csproj", "{043E4002-47E9-4C3F-A11D-9C177048396E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Lucene", "SiteSearch.Lucene\SiteSearch.Lucene.csproj", "{043E4002-47E9-4C3F-A11D-9C177048396E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Middleware", "SiteSearch.Middleware\SiteSearch.Middleware.csproj", "{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{043E4002-47E9-4C3F-A11D-9C177048396E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{043E4002-47E9-4C3F-A11D-9C177048396E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{043E4002-47E9-4C3F-A11D-9C177048396E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
