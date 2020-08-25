@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SiteSearch.Core\SiteSearch.Core.csproj" />
+    <ProjectReference Include="..\SiteSearch.Lucene\SiteSearch.Lucene.csproj" />
+    <ProjectReference Include="..\SiteSearch.Middleware\SiteSearch.Middleware.csproj" />
+  </ItemGroup>
+
+</Project>

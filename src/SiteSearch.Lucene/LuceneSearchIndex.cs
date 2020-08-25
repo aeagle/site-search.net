@@ -51,8 +51,17 @@ namespace SiteSearch.Lucene
             return
                 new LuceneSearchIndexWriter
                 (
-                    new IndexWriter(FSDirectory.Open(Path.Combine(indexPath, indexType)), new IndexWriterConfig(MATCH_LUCENE_VERSION, analyzer)),
-                    new DirectoryTaxonomyWriter(FSDirectory.Open(Path.Combine(indexPath, indexType, "taxonomy"))),
+                    new IndexWriter(
+                        FSDirectory.Open(
+                            Path.Combine(indexPath, indexType)
+                        ), 
+                        new IndexWriterConfig(MATCH_LUCENE_VERSION, analyzer)
+                    ),
+                    new DirectoryTaxonomyWriter(
+                        FSDirectory.Open(
+                            Path.Combine(indexPath, indexType, "taxonomy")
+                        )
+                    ),
                     new FacetsConfig()
                 );
         }

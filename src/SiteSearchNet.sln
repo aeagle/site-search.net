@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Lucene", "SiteSe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Middleware", "SiteSearch.Middleware\SiteSearch.Middleware.csproj", "{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Test", "SiteSearch.Test\SiteSearch.Test.csproj", "{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
