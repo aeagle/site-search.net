@@ -24,11 +24,11 @@ namespace SiteSearch.Middleware
             if (context.Request.Path.StartsWithSegments("/search"))
             {
                 var queryDefinition =
-                    new SearchQuery()
-                        .FacetOn(f => f
-                            .Field("contenttype"),
-                            max: 10
-                        );
+                    new SearchQuery();
+                        // .FacetOn(f => f
+                        //     .Field("contenttype"),
+                        //     max: 10
+                        // );
 
                 string limit;
                 if (!string.IsNullOrWhiteSpace(limit = context.Request.Query["ps"]))

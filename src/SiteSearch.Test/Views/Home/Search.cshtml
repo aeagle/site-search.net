@@ -1,0 +1,39 @@
+﻿@model SiteSearch.Core.Models.SearchResult<SearchItem>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div>
+    <form method="get">
+
+        <div style="margin: 20px 0">
+            <input type="text" name="q" placeholder="Search ..." style="width: 100%; padding: 5px 10px;" />
+            <button type="submit">Search</button>
+        </div>
+
+        <div class="search-items">
+            @if (Model.Hits.Any())
+            {
+                <p>
+                    Showing @Model.Hits.Count() of @Model.TotalHits results ...
+                </p>
+
+                <div class="result-list">
+                    @foreach (var item in Model.Hits)
+                    {
+                        <div class="result">
+                            <h2>
+                                <a href="@item.Url">@Html.Raw(item.Title)</a>
+                            </h2>
+                            <p>@Html.Raw(item.Precis)</p>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p>No results found.</p>
+            }
+        </div>
+    </form>
+</div>

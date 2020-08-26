@@ -1,7 +1,5 @@
-﻿using SiteSearch.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
+using SiteSearch.Core.Models;
 
 namespace SiteSearch.Core.Extensions
 {

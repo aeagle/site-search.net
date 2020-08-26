@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SiteSearch.Core.Models;
 using SiteSearch.Test.Models;
 
 namespace SiteSearch.Test.Controllers
@@ -20,12 +21,13 @@ namespace SiteSearch.Test.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Search");
         }
 
-        public IActionResult Privacy()
+        [Route("search")]
+        public IActionResult Search()
         {
-            return View();
+            return View((SearchResult<SearchItem>)Request.HttpContext.Items["_search_result"]);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

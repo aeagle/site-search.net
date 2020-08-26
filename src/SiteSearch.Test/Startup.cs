@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -21,13 +22,25 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddTransient<ISearchIndex<SearchItem>, LuceneSearchIndex<SearchItem>>();
-            services.AddControllersWithViews();
+            services.AddSingleton<ISearchIndex<SearchItem>>((ctx) => {
+                var hostingEnvironment = ctx.GetRequiredService<IWebHostEnvironment>();
+                return new LuceneSearchIndex<SearchItem>(
+                    new LuceneSearchIndexOptions
+                    {
+                        IndexPath = Path.Combine(hostingEnvironment.ContentRootPath, "search-index")
+                    }
+                );
+            });
+
+            services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
+        public void Configure(
+            IApplicationBuilder app, 
+            IWebHostEnvironment env,
+            ISearchIndex<SearchItem> searchIndex)
+        {   
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -46,6 +59,8 @@ namespace SiteSearch.Test
 
             app.UseAuthorization();
 
+            app.UseSearch<SearchItem>();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(
@@ -53,7 +68,27 @@ namespace SiteSearch.Test
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
 
-            app.UseSearch<SearchItem>();
+            searchIndex.CreateIndex();
+
+            var testItem = new SearchItem {
+                Id = "1234",
+                Url = "https://www.google.com",
+                Title = "This is a test item",
+                Precis = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur.",
+                Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
+            };
+
+            searchIndex.Index(testItem);
+            
+            testItem = new SearchItem {
+                Id = "4321",
+                Url = "https://www.google.com",
+                Title = "Red green yellow blue",
+                Precis = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur.",
+                Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
+            };
+
+            searchIndex.Index(testItem);
         }
     }
 }

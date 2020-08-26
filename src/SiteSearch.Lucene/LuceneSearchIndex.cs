@@ -1,4 +1,9 @@
-﻿using Lucene.Net.Analysis;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Facet;
@@ -12,11 +17,6 @@ using SiteSearch.Core.Extensions;
 using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
 using SiteSearch.Core.Utils;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
 
 namespace SiteSearch.Lucene
 {
