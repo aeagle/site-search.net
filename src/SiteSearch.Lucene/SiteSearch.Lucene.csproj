@@ -8,6 +8,7 @@
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00008" />
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00008" />
     <PackageReference Include="Lucene.Net.Facet" Version="4.8.0-beta00008" />
+    <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>

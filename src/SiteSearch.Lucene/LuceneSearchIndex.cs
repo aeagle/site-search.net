@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
@@ -14,6 +15,7 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
+using Nito.AsyncEx;
 using SiteSearch.Core.Extensions;
 using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
@@ -27,6 +29,7 @@ namespace SiteSearch.Lucene
         private readonly string indexPath = @"";
         private readonly string indexType;
         private readonly SearchMetaData searchMetaData;
+        private static AsyncReaderWriterLock writerLock = new AsyncReaderWriterLock();
 
         private Analyzer SetupAnalyzer() => new StandardAnalyzer(MATCH_LUCENE_VERSION);
 
@@ -123,42 +126,19 @@ namespace SiteSearch.Lucene
             return doc;
         }
 
-        public Task CreateIndexAsync()
+        public async Task CreateIndexAsync(CancellationToken cancellationToken = default)
         {
-            using (getWriter()) { };
-
-            return Task.CompletedTask;
-        }
-
-        public Task IndexAsync(T document)
-        {
-            using (var writer = getWriter())
+            using (await writerLock.WriterLockAsync(cancellationToken))
             {
-                var docToIndex = createDocument(document);
-                foreach (var facetField in searchMetaData.Fields.Where(x => x.Value.Facet))
-                {
-                    docToIndex.Add(
-                        new FacetField(
-                            facetField.Key,
-                            facetField.Value.PropertyInfo.GetValue(document).ToString()
-                        )
-                    );
-                }
-                var doc = writer.FacetsConfig.Build(writer.TaxonomyWriter, docToIndex);
-                writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), doc);
-
-                writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
-                writer.DocsWriter.Commit();
+                using (getWriter()) { };
             }
-
-            return Task.CompletedTask;
         }
 
-        public Task IndexAsync(IEnumerable<T> documents)
+        public async Task IndexAsync(T document, CancellationToken cancellationToken = default)
         {
-            using (var writer = getWriter())
+            using (await writerLock.WriterLockAsync(cancellationToken))
             {
-                foreach (var document in documents)
+                using (var writer = getWriter())
                 {
                     var docToIndex = createDocument(document);
                     foreach (var facetField in searchMetaData.Fields.Where(x => x.Value.Facet))
@@ -171,14 +151,40 @@ namespace SiteSearch.Lucene
                         );
                     }
                     var doc = writer.FacetsConfig.Build(writer.TaxonomyWriter, docToIndex);
-                    writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), docToIndex);
+                    writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), doc);
+
+                    writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
+                    writer.DocsWriter.Commit();
                 }
-
-                writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
-                writer.DocsWriter.Commit();
             }
+        }
 
-            return Task.CompletedTask;
+        public async Task IndexAsync(IEnumerable<T> documents, CancellationToken cancellationToken = default)
+        {
+            using (await writerLock.WriterLockAsync(cancellationToken))
+            {
+                using (var writer = getWriter())
+                {
+                    foreach (var document in documents)
+                    {
+                        var docToIndex = createDocument(document);
+                        foreach (var facetField in searchMetaData.Fields.Where(x => x.Value.Facet))
+                        {
+                            docToIndex.Add(
+                                new FacetField(
+                                    facetField.Key,
+                                    facetField.Value.PropertyInfo.GetValue(document).ToString()
+                                )
+                            );
+                        }
+                        var doc = writer.FacetsConfig.Build(writer.TaxonomyWriter, docToIndex);
+                        writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), docToIndex);
+                    }
+
+                    writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
+                    writer.DocsWriter.Commit();
+                }
+            }
         }
 
         private T inflateDocument(Document document)
@@ -209,67 +215,70 @@ namespace SiteSearch.Lucene
             return result;
         }
 
-        public Task<SearchResult<T>> SearchAsync(SearchQuery queryDefinition)
+        public async Task<SearchResult<T>> SearchAsync(SearchQuery queryDefinition, CancellationToken cancellationToken = default)
         {
-            var result = new SearchResult<T>();
-            List<T> hits = new List<T>();
-
-            using (var writer = getWriter())
+            using (await writerLock.ReaderLockAsync(cancellationToken))
             {
-                Query query = new MatchAllDocsQuery();
+                var result = new SearchResult<T>();
+                List<T> hits = new List<T>();
 
-                // Term queries
-                if (queryDefinition.TermQueries.Any())
+                using (var writer = getWriter())
                 {
-                    var phraseQuery = new MultiPhraseQuery();
-                    foreach (var termQuery in queryDefinition.TermQueries)
+                    Query query = new MatchAllDocsQuery();
+
+                    // Term queries
+                    if (queryDefinition.TermQueries.Any())
                     {
-                        phraseQuery.Add(
-                            termQuery.value
-                                .Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
-                                .Select(phrase => new Term(termQuery.field, phrase.ToLower()))
-                                .ToArray()
-                        );
-                    }
-                    query = phraseQuery;
-                }
-
-                var reader = writer.DocsWriter.GetReader(applyAllDeletes: true);
-                var searcher = new IndexSearcher(reader);
-                var luceneResult = searcher.Search(query, queryDefinition.Limit);
-
-                foreach (var doc in luceneResult.ScoreDocs)
-                {
-                    var foundDoc = searcher.Doc(doc.Doc);
-                    hits.Add(inflateDocument(foundDoc));
-                }
-
-                result.TotalHits = luceneResult.TotalHits;
-                result.Hits = hits;
-
-                // Facets
-                if (queryDefinition.Facets.Any())
-                {
-                    FacetsConfig facetsConfig = new FacetsConfig();
-                    FacetsCollector fc = new FacetsCollector();
-                    FacetsCollector.Search(searcher, query, queryDefinition.FacetMax, fc);
-                    using (var taxonomyReader = new DirectoryTaxonomyReader(FSDirectory.Open(Path.Combine(indexPath, indexType, "taxonomy"))))
-                    {
-                        var facets = new FastTaxonomyFacetCounts(taxonomyReader, facetsConfig, fc);
-                        foreach (var facet in queryDefinition.Facets)
+                        var phraseQuery = new MultiPhraseQuery();
+                        foreach (var termQuery in queryDefinition.TermQueries)
                         {
-                            var facetGroup = new FacetGroup { Field = facet };
-                            facetGroup.Facets =
-                                facets.GetTopChildren(queryDefinition.FacetMax, facet).LabelValues
-                                    .Select(x => new Facet { Key = x.Label, Count = (long)x.Value })
-                                    .ToArray();
-                            result.FacetGroups.Add(facetGroup);
+                            phraseQuery.Add(
+                                termQuery.value
+                                    .Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(phrase => new Term(termQuery.field, phrase.ToLower()))
+                                    .ToArray()
+                            );
+                        }
+                        query = phraseQuery;
+                    }
+
+                    var reader = writer.DocsWriter.GetReader(applyAllDeletes: true);
+                    var searcher = new IndexSearcher(reader);
+                    var luceneResult = searcher.Search(query, queryDefinition.Limit);
+
+                    foreach (var doc in luceneResult.ScoreDocs)
+                    {
+                        var foundDoc = searcher.Doc(doc.Doc);
+                        hits.Add(inflateDocument(foundDoc));
+                    }
+
+                    result.TotalHits = luceneResult.TotalHits;
+                    result.Hits = hits;
+
+                    // Facets
+                    if (queryDefinition.Facets.Any())
+                    {
+                        FacetsConfig facetsConfig = new FacetsConfig();
+                        FacetsCollector fc = new FacetsCollector();
+                        FacetsCollector.Search(searcher, query, queryDefinition.FacetMax, fc);
+                        using (var taxonomyReader = new DirectoryTaxonomyReader(FSDirectory.Open(Path.Combine(indexPath, indexType, "taxonomy"))))
+                        {
+                            var facets = new FastTaxonomyFacetCounts(taxonomyReader, facetsConfig, fc);
+                            foreach (var facet in queryDefinition.Facets)
+                            {
+                                var facetGroup = new FacetGroup { Field = facet };
+                                facetGroup.Facets =
+                                    facets.GetTopChildren(queryDefinition.FacetMax, facet).LabelValues
+                                        .Select(x => new Facet { Key = x.Label, Count = (long)x.Value })
+                                        .ToArray();
+                                result.FacetGroups.Add(facetGroup);
+                            }
                         }
                     }
                 }
-            }
 
-            return Task.FromResult(result);
+                return result;
+            }
         }
     }
 }
