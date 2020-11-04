@@ -1,25 +1,26 @@
-﻿@model SiteSearch.Core.Models.SearchResult<SearchItem>
+﻿@using SiteSearch.Middleware
 @{
     ViewData["Title"] = "Home Page";
+    var searchResult = Context.GetSearchResult<SearchItem>();
 }
 
 <div>
     <form method="get">
 
         <div style="margin: 20px 0">
-            <input type="text" name="q" placeholder="Search ..." style="width: 100%; padding: 5px 10px;" />
+            <input type="text" name="q" value="@searchResult.CurrentCriteria.Term" placeholder="Search ..." style="width: 100%; padding: 5px 10px;" />
             <button type="submit">Search</button>
         </div>
 
         <div class="search-items">
-            @if (Model.Hits.Any())
+            @if (searchResult.Hits.Any())
             {
                 <p>
-                    Showing @Model.Hits.Count() of @Model.TotalHits results ...
+                    Showing @searchResult.Hits.Count() of @searchResult.TotalHits results ...
                 </p>
 
                 <div class="result-list">
-                    @foreach (var item in Model.Hits)
+                    @foreach (var item in searchResult.Hits)
                     {
                         <div class="result">
                             <h2>

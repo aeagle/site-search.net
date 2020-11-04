@@ -6,10 +6,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.9" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SiteSearch.Core\SiteSearch.Core.csproj" />
+    <ProjectReference Include="..\SiteSearch.Lucene\SiteSearch.Lucene.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
@@ -23,7 +24,7 @@ namespace SiteSearch.Lucene
     public class LuceneSearchIndex<T> : ISearchIndex<T> where T : class, new()
     {
         private const LuceneVersion MATCH_LUCENE_VERSION = LuceneVersion.LUCENE_48;
-        private readonly string indexPath = @"C:\Users\allan\OneDrive\Desktop\Repos\allaneagle.com\src\search-index";
+        private readonly string indexPath = @"";
         private readonly string indexType;
         private readonly SearchMetaData searchMetaData;
 
@@ -31,7 +32,7 @@ namespace SiteSearch.Lucene
 
         public LuceneSearchIndex()
         {
-            indexType = typeof(T).FullName.ToLower();
+            indexType = typeof(T).AssemblyQualifiedName.SafeFilename();
             searchMetaData = SearchMetaDataUtility.GetMetaData<T>();
         }
 
@@ -54,7 +55,7 @@ namespace SiteSearch.Lucene
                     new IndexWriter(
                         FSDirectory.Open(
                             Path.Combine(indexPath, indexType)
-                        ), 
+                        ),
                         new IndexWriterConfig(MATCH_LUCENE_VERSION, analyzer)
                     ),
                     new DirectoryTaxonomyWriter(
@@ -122,12 +123,14 @@ namespace SiteSearch.Lucene
             return doc;
         }
 
-        public void CreateIndex()
+        public Task CreateIndexAsync()
         {
             using (getWriter()) { };
+
+            return Task.CompletedTask;
         }
 
-        public void Index(T document)
+        public Task IndexAsync(T document)
         {
             using (var writer = getWriter())
             {
@@ -147,9 +150,11 @@ namespace SiteSearch.Lucene
                 writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
                 writer.DocsWriter.Commit();
             }
+
+            return Task.CompletedTask;
         }
 
-        public void Index(IEnumerable<T> documents)
+        public Task IndexAsync(IEnumerable<T> documents)
         {
             using (var writer = getWriter())
             {
@@ -172,6 +177,8 @@ namespace SiteSearch.Lucene
                 writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
                 writer.DocsWriter.Commit();
             }
+
+            return Task.CompletedTask;
         }
 
         private T inflateDocument(Document document)
@@ -202,7 +209,7 @@ namespace SiteSearch.Lucene
             return result;
         }
 
-        public SearchResult<T> Search(SearchQuery queryDefinition)
+        public Task<SearchResult<T>> SearchAsync(SearchQuery queryDefinition)
         {
             var result = new SearchResult<T>();
             List<T> hits = new List<T>();
@@ -211,6 +218,7 @@ namespace SiteSearch.Lucene
             {
                 Query query = new MatchAllDocsQuery();
 
+                // Term queries
                 if (queryDefinition.TermQueries.Any())
                 {
                     var phraseQuery = new MultiPhraseQuery();
@@ -239,6 +247,7 @@ namespace SiteSearch.Lucene
                 result.TotalHits = luceneResult.TotalHits;
                 result.Hits = hits;
 
+                // Facets
                 if (queryDefinition.Facets.Any())
                 {
                     FacetsConfig facetsConfig = new FacetsConfig();
@@ -260,35 +269,7 @@ namespace SiteSearch.Lucene
                 }
             }
 
-            return result;
-        }
-    }
-
-    public class LuceneSearchIndexOptions
-    {
-        public string IndexPath { get; set; }
-    }
-
-    public class LuceneSearchIndexWriter : IDisposable
-    {
-        public IndexWriter DocsWriter { get; private set; }
-        public DirectoryTaxonomyWriter TaxonomyWriter { get; private set; }
-        public FacetsConfig FacetsConfig { get; private set; }
-
-        public LuceneSearchIndexWriter(
-            IndexWriter DocsWriter,
-            DirectoryTaxonomyWriter TaxonomyWriter,
-            FacetsConfig FacetsConfig)
-        {
-            this.DocsWriter = DocsWriter;
-            this.TaxonomyWriter = TaxonomyWriter;
-            this.FacetsConfig = FacetsConfig;
-        }
-
-        public void Dispose()
-        {
-            DocsWriter.Dispose();
-            TaxonomyWriter.Dispose();
+            return Task.FromResult(result);
         }
     }
 }

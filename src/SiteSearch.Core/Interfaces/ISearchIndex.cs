@@ -1,13 +1,14 @@
 ﻿using SiteSearch.Core.Models;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SiteSearch.Core.Interfaces
 {
     public interface ISearchIndex<T>
     {
-        void CreateIndex();
-        void Index(T document);
-        void Index(IEnumerable<T> documents);
-        SearchResult<T> Search(SearchQuery query);
+        Task CreateIndexAsync();
+        Task IndexAsync(T document);
+        Task IndexAsync(IEnumerable<T> documents);
+        Task<SearchResult<T>> SearchAsync(SearchQuery query);
     }
 }

@@ -1,4 +1,7 @@
+using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,15 +25,13 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<ISearchIndex<SearchItem>>((ctx) => {
+            services.AddLuceneSearch<SearchItem>((ctx) =>
+            {
                 var hostingEnvironment = ctx.GetRequiredService<IWebHostEnvironment>();
-                return new LuceneSearchIndex<SearchItem>(
-                    new LuceneSearchIndexOptions
-                    {
-                        IndexPath = Path.Combine(hostingEnvironment.ContentRootPath, "search-index")
-                    }
-                );
+                return Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
             });
+
+            services.AddHostedService<SetupSearchIndex>(); 
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
@@ -38,8 +39,7 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(
             IApplicationBuilder app, 
-            IWebHostEnvironment env,
-            ISearchIndex<SearchItem> searchIndex)
+            IWebHostEnvironment env)
         {   
             if (env.IsDevelopment())
             {
@@ -59,7 +59,7 @@ namespace SiteSearch.Test
 
             app.UseAuthorization();
 
-            app.UseSearch<SearchItem>();
+            app.UseSearch<SearchItem>("/search");
 
             app.UseEndpoints(endpoints =>
             {
@@ -67,10 +67,24 @@ namespace SiteSearch.Test
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
+        }
+    }
 
-            searchIndex.CreateIndex();
+    public class SetupSearchIndex : IHostedService
+    {
+        private readonly ISearchIndex<SearchItem> searchIndex;
 
-            var testItem = new SearchItem {
+        public SetupSearchIndex(ISearchIndex<SearchItem> searchIndex)
+        {
+            this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+        }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await searchIndex.CreateIndexAsync();
+
+            var testItem = new SearchItem
+            {
                 Id = "1234",
                 Url = "https://www.google.com",
                 Title = "This is a test item",
@@ -78,9 +92,10 @@ namespace SiteSearch.Test
                 Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
             };
 
-            searchIndex.Index(testItem);
-            
-            testItem = new SearchItem {
+            await searchIndex.IndexAsync(testItem);
+
+            testItem = new SearchItem
+            {
                 Id = "4321",
                 Url = "https://www.google.com",
                 Title = "Red green yellow blue",
@@ -88,7 +103,9 @@ namespace SiteSearch.Test
                 Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
             };
 
-            searchIndex.Index(testItem);
+            await searchIndex.IndexAsync(testItem);
         }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }
