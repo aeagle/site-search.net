@@ -23,7 +23,7 @@ namespace SiteSearch.Middleware
         public static IServiceCollection AddLuceneSearch<T>(
             this IServiceCollection services, Func<IServiceProvider, string> indexPath) where T : class, new()
         {
-            return services.AddSingleton<ISearchIndex<T>>((ctx) => {
+            services.AddSingleton<ISearchIndex<T>>((ctx) => {
                 return new LuceneSearchIndex<T>(
                     new LuceneSearchIndexOptions
                     {
@@ -31,16 +31,10 @@ namespace SiteSearch.Middleware
                     }
                 );
             });
-        }
 
-        public static void AddSearchResult<T>(this HttpContext context, SearchResult<T> result)
-        {
-            context.Items["_search_result"] = result;
-        }
+            services.AddScoped(ctx => new SearchContext());
 
-        public static SearchResult<T> GetSearchResult<T>(this HttpContext context)
-        {
-            return (SearchResult<T>)context.Items["_search_result"];
+            return services;
         }
     }
 }

@@ -1,40 +1,58 @@
-﻿@using SiteSearch.Middleware
+﻿@model SearchResult<SearchItem>;
+@using SiteSearch.Core.Models
+@using SiteSearch.Middleware
 @{
     ViewData["Title"] = "Home Page";
-    var searchResult = Context.GetSearchResult<SearchItem>();
 }
 
-<div>
-    <form method="get">
+<style>
+    #search-results {
+        margin-left: auto;
+        margin-right: auto;
+        width: calc(100% - 200px);
+    }
 
-        <div style="margin: 20px 0">
-            <input type="text" name="q" value="@searchResult.CurrentCriteria.Term" placeholder="Search ..." style="width: 100%; padding: 5px 10px;" />
-            <button type="submit">Search</button>
+    #search-results .mui-textfield {
+            display: inline-block;
+            width: calc(100% - 117px);
+    }
+
+    #search-results input[type='text'] {
+        width: 100%;
+    }
+</style>
+
+<div id="search-results">
+    <div class="mui-panel">
+    <form class="mui-form--inline">
+        <div class="mui-textfield">
+            <input type="text" autofocus name="q" value="@Model.CurrentCriteria.Term" placeholder="Search ..." style="padding: 5px 10px;" />
         </div>
-
-        <div class="search-items">
-            @if (searchResult.Hits.Any())
-            {
-                <p>
-                    Showing @searchResult.Hits.Count() of @searchResult.TotalHits results ...
-                </p>
-
-                <div class="result-list">
-                    @foreach (var item in searchResult.Hits)
-                    {
-                        <div class="result">
-                            <h2>
-                                <a href="@item.Url">@Html.Raw(item.Title)</a>
-                            </h2>
-                            <p>@Html.Raw(item.Precis)</p>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <p>No results found.</p>
-            }
-        </div>
+        <button type="submit" class="mui-btn mui-btn--primary">Search</button>
     </form>
+    </div>
+    <div class="search-items">
+        @if (Model.Hits.Any())
+        {
+            <p>
+                Showing @Model.Hits.Count() of @Model.TotalHits results ...
+            </p>
+
+            <div class="result-list">
+                @foreach (var item in Model.Hits)
+                {
+                    <div class="result">
+                        <h2>
+                            <a href="@item.Url">@Html.Raw(item.Title)</a>
+                        </h2>
+                        <p>@Html.Raw(item.Precis)</p>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p>No results found.</p>
+        }
+    </div>
 </div>

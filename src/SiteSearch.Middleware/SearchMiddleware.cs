@@ -12,13 +12,15 @@ namespace SiteSearch.Middleware
         private readonly ISearchIndex<T> searchIndex;
         private readonly RequestDelegate _next;
 
-        public SearchMiddleware(RequestDelegate next, ISearchIndex<T> searchIndex)
+        public SearchMiddleware(
+            RequestDelegate next, 
+            ISearchIndex<T> searchIndex)
         {
             this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync(HttpContext context, SearchContext searchContext)
         {
             // Extract criteria from query string
             var currentCriteria =
@@ -44,7 +46,7 @@ namespace SiteSearch.Middleware
             var result = await searchIndex.SearchAsync(queryDefinition);
             result.CurrentCriteria = currentCriteria;
 
-            context.AddSearchResult(result);
+            searchContext.Set(result);
 
             // Call the next delegate/middleware in the pipeline
             await _next(context);
