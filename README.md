@@ -1,5 +1,7 @@
 # SiteSearch.NET
 
+_Note SiteSearch.NET is work in progress_
+
 A simple full text search abstraction with a Lucene.NET file-based implementation and .NET middleware allowing search interfaces to be quickly built.
 
 - Ingestion
