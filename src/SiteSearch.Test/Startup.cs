@@ -1,21 +1,19 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using SiteSearch.Core.Interfaces;
-using SiteSearch.Lucene;
 using SiteSearch.Middleware;
 using SiteSearch.Test.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SiteSearch.Test
 {
@@ -147,7 +145,7 @@ namespace SiteSearch.Test
                         await context.IndexAsync(testItem);
                         processed++;
 
-                        if (processed > 200)
+                        if (processed > 3000)
                         {
                             break;
                         }
