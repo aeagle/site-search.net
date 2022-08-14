@@ -19,6 +19,10 @@ public class SearchItem
     public string Body { get; set; }
 
     [Keyword, Store]
+    [SearchAlias("c")]
+    public string Category { get; set; }
+
+    [Keyword, Store]
     public string Url { get; set; }
 
     [SearchAlias("q")]

@@ -38,7 +38,7 @@ namespace SiteSearch.Test
             });
 
             services.AddHostedService<CreateSearchIndex>();
-            //services.AddHostedService<SetupSearchIndex>(); 
+            services.AddHostedService<SetupSearchIndex>(); 
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
@@ -111,7 +111,7 @@ namespace SiteSearch.Test
         {
             static string Hash(string input)
             {
-                using (var sha1 = new SHA1Managed())
+                using (var sha1 = SHA1.Create())
                 {
                     var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
                     var sb = new StringBuilder(hash.Length * 2);
@@ -126,27 +126,35 @@ namespace SiteSearch.Test
                 }
             }
 
-            using (var stream = File.OpenRead(@"C:\Projects\site-search-net\src\SiteSearch.Test\News_Category_Dataset_v2.json"))
-            using (var sr = new StreamReader(stream))
+            using (var context = searchIndex.StartUpdates())
             {
-                var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
-                var processed = 0;
-                foreach (var item in items)
+                using (var stream = File.OpenRead(@"C:\Projects\site-search-net\src\SiteSearch.Test\News_Category_Dataset_v2.json"))
+                using (var sr = new StreamReader(stream))
                 {
-                    var testItem = new SearchItem
+                    var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
+                    var processed = 0;
+                    foreach (var item in items)
                     {
-                        Id = Hash($"{item.Headline} {item.Link}"),
-                        Url = item.Link,
-                        Title = item.Headline,
-                        Precis = item.Short_Description
-                    };
+                        var testItem = new SearchItem
+                        {
+                            Id = Hash($"{item.Headline} {item.Link}"),
+                            Url = item.Link,
+                            Title = item.Headline,
+                            Category = item.Category,
+                            Precis = item.Short_Description
+                        };
 
-                    await searchIndex.IndexAsync(testItem);
-                    processed++;
+                        await context.IndexAsync(testItem);
+                        processed++;
 
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        break;
+                        if (processed > 200)
+                        {
+                            break;
+                        }
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
                     }
                 }
             }

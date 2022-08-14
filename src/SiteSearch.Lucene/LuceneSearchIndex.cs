@@ -1,14 +1,11 @@
-﻿using Lucene.Net.Analysis;
-using Lucene.Net.Analysis.Standard;
-using Lucene.Net.Documents;
+﻿using Lucene.Net.Documents;
 using Lucene.Net.Facet;
 using Lucene.Net.Facet.Taxonomy;
 using Lucene.Net.Facet.Taxonomy.Directory;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
-using Lucene.Net.Util;
-using Nito.AsyncEx;
 using SiteSearch.Core;
 using SiteSearch.Core.Extensions;
 using SiteSearch.Core.Interfaces;
@@ -24,16 +21,14 @@ namespace SiteSearch.Lucene
 {
     public class LuceneSearchIndex<T> : BaseSearchIndex<T>, ISearchIndex<T> where T : class, new()
     {
-        private const LuceneVersion MATCH_LUCENE_VERSION = LuceneVersion.LUCENE_48;
         private readonly string indexType;
         private readonly LuceneSearchIndexOptions options;
-        private static AsyncReaderWriterLock writerLock = new AsyncReaderWriterLock();
-
-        private Analyzer SetupAnalyzer() => new StandardAnalyzer(MATCH_LUCENE_VERSION);
+        private readonly LuceneIndex index;
 
         public LuceneSearchIndex() : base()
         {
             indexType = typeof(T).AssemblyQualifiedName.SafeFilename();
+            index = new LuceneIndex();
         }
 
         public LuceneSearchIndex(LuceneSearchIndexOptions options) : this()
@@ -43,108 +38,47 @@ namespace SiteSearch.Lucene
 
         public async Task CreateIndexAsync(CancellationToken cancellationToken = default)
         {
-            using (await writerLock.WriterLockAsync(cancellationToken))
+            using (await index.WriterLock.WriterLockAsync(cancellationToken))
             {
                 using (getWriter()) { };
             }
         }
 
-        public async Task IndexAsync(T document, CancellationToken cancellationToken = default)
+        public IIngestionContext<T> StartUpdates()
         {
-            using (await writerLock.WriterLockAsync(cancellationToken))
-            {
-                using (var writer = getWriter())
-                {
-                    var docToIndex = await createDocument(document);
-                    foreach (var facetField in searchMetaData.Fields.Where(x => x.Value.Facet))
-                    {
-                        docToIndex.Add(
-                            new FacetField(
-                                facetField.Key,
-                                facetField.Value.PropertyInfo.GetValue(document).ToString()
-                            )
-                        );
-                    }
-                    var doc = writer.FacetsConfig.Build(writer.TaxonomyWriter, docToIndex);
-                    writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), doc);
-
-                    writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
-                    writer.DocsWriter.Commit();
-                }
-            }
-        }
-
-        public async Task IndexAsync(IEnumerable<T> documents, CancellationToken cancellationToken = default)
-        {
-            using (await writerLock.WriterLockAsync(cancellationToken))
-            {
-                using (var writer = getWriter())
-                {
-                    foreach (var document in documents)
-                    {
-                        var docToIndex = await createDocument(document);
-                        foreach (var facetField in searchMetaData.Fields.Where(x => x.Value.Facet))
-                        {
-                            docToIndex.Add(
-                                new FacetField(
-                                    facetField.Key,
-                                    facetField.Value.PropertyInfo.GetValue(document).ToString()
-                                )
-                            );
-                        }
-                        var doc = writer.FacetsConfig.Build(writer.TaxonomyWriter, docToIndex);
-                        writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), docToIndex);
-                    }
-
-                    writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
-                    writer.DocsWriter.Commit();
-                }
-            }
-        }
-
-        public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
-        {
-            using (await writerLock.WriterLockAsync(cancellationToken))
-            {
-                using (var writer = getWriter())
-                {
-                    writer.DocsWriter.DeleteDocuments(new Term("_id", id));
-                    writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
-                    writer.DocsWriter.Commit();
-                }
-            }
+            return new LuceneIngestionContext<T>(index, options, searchMetaData, indexType);
         }
 
         public async Task<SearchResult<T>> SearchAsync(SearchQuery queryDefinition, CancellationToken cancellationToken = default)
         {
-            using (await writerLock.ReaderLockAsync(cancellationToken))
+            using (await index.WriterLock.ReaderLockAsync(cancellationToken))
             {
                 var result = new SearchResult<T>();
                 List<T> hits = new List<T>();
+                var analyzer = index.SetupAnalyzer();
 
                 using (var writer = getWriter())
                 {
-                    Query query = new MatchAllDocsQuery();
+                    var mainQuery = new BooleanQuery();
 
-                    // Term queries
                     if (queryDefinition.TermQueries.Any())
                     {
-                        var phraseQuery = new MultiPhraseQuery();
+                        // Term queries
                         foreach (var termQuery in queryDefinition.TermQueries)
                         {
-                            phraseQuery.Add(
-                                termQuery.value
-                                    .Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
-                                    .Select(phrase => new Term(termQuery.field, phrase.ToLower()))
-                                    .ToArray()
-                            );
+                            var parser = new QueryParser(index.MATCH_LUCENE_VERSION, termQuery.field, analyzer);
+                            var query = parser.Parse(termQuery.value);
+                            mainQuery.Add(query, Occur.MUST);
                         }
-                        query = phraseQuery;
+                    }
+                    else
+                    {
+                        mainQuery.Add(new MatchAllDocsQuery(), Occur.MUST);
                     }
 
                     var reader = writer.DocsWriter.GetReader(applyAllDeletes: true);
                     var searcher = new IndexSearcher(reader);
-                    var luceneResult = searcher.Search(query, queryDefinition.Limit);
+                    var luceneResult = searcher.Search(mainQuery, queryDefinition.Limit);
 
                     foreach (var doc in luceneResult.ScoreDocs)
                     {
@@ -160,7 +94,7 @@ namespace SiteSearch.Lucene
                     {
                         FacetsConfig facetsConfig = new FacetsConfig();
                         FacetsCollector fc = new FacetsCollector();
-                        FacetsCollector.Search(searcher, query, queryDefinition.FacetMax, fc);
+                        FacetsCollector.Search(searcher, mainQuery, queryDefinition.FacetMax, fc);
                         using (var taxonomyReader = new DirectoryTaxonomyReader(FSDirectory.Open(Path.Combine(options.IndexPath, indexType, "taxonomy"))))
                         {
                             var facets = new FastTaxonomyFacetCounts(taxonomyReader, facetsConfig, fc);
@@ -183,7 +117,7 @@ namespace SiteSearch.Lucene
 
         private LuceneSearchIndexWriter getWriter()
         {
-            var analyzer = SetupAnalyzer();
+            var analyzer = index.SetupAnalyzer();
             return
                 new LuceneSearchIndexWriter
                 (
@@ -191,7 +125,7 @@ namespace SiteSearch.Lucene
                         FSDirectory.Open(
                             Path.Combine(options.IndexPath, indexType)
                         ),
-                        new IndexWriterConfig(MATCH_LUCENE_VERSION, analyzer)
+                        new IndexWriterConfig(index.MATCH_LUCENE_VERSION, analyzer)
                     ),
                     new DirectoryTaxonomyWriter(
                         FSDirectory.Open(
@@ -200,74 +134,6 @@ namespace SiteSearch.Lucene
                     ),
                     new FacetsConfig()
                 );
-        }
-
-        private async Task<Document> createDocument(T document)
-        {
-            Document doc = new Document();
-
-            var idField = searchMetaData.Fields.FirstOrDefault(x => x.Value.Id);
-            if (!idField.Equals(default(KeyValuePair<string, SearchFieldInfo>)))
-            {
-                doc.Add(
-                    new StringField(
-                        "_id",
-                        idField.Value.PropertyInfo.GetValue(document).ToString(),
-                        Field.Store.YES
-                    )
-                );
-            }
-            else
-            {
-                doc.Add(
-                    new StringField(
-                        "_id",
-                        Guid.NewGuid().ToString(),
-                        Field.Store.YES
-                    )
-                );
-            }
-
-            // Store document as JSON in _source field
-            doc.Add(
-                new StringField(
-                    "_source",
-                    await options.Serializer.SerializeAsync(document),
-                    Field.Store.YES
-                )
-            );
-
-            foreach (var field in searchMetaData.Fields)
-            {
-                var metaData = field.Value;
-                var value = metaData.PropertyInfo.GetValue(document);
-
-                if (value != default)
-                {
-                    if (metaData.Keyword)
-                    {
-                        doc.Add(
-                            new StringField(
-                                field.Key,
-                                value.ToString(),
-                                metaData.Store ? Field.Store.YES : Field.Store.NO
-                            )
-                        );
-                    }
-                    else
-                    {
-                        doc.Add(
-                            new TextField(
-                                field.Key,
-                                value.ToString(),
-                                metaData.Store ? Field.Store.YES : Field.Store.NO
-                            )
-                        );
-                    }
-                }
-            }
-
-            return doc;
         }
 
         private async Task<T> inflateDocument(Document document)

@@ -49,5 +49,10 @@ namespace SiteSearch.Elastic
         {
             throw new NotImplementedException();
         }
+
+        public IIngestionContext<T> StartUpdates()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
