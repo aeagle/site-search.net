@@ -18,7 +18,7 @@ public class SearchItem
     [SearchAlias("b")]
     public string Body { get; set; }
 
-    [Keyword, Store]
+    [Keyword, Store, TermFacet]
     [SearchAlias("c")]
     public string Category { get; set; }
 

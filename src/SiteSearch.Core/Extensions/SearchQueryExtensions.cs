@@ -5,7 +5,7 @@ namespace SiteSearch.Core.Extensions
 {
     public static class SearchQueryExtensions
     {
-        public static SearchQuery TermQuery(this SearchQuery query, string field, string value)
+        public static SearchQuery TermQuery(this SearchQuery query, SearchFieldInfo field, string value)
         {
             query.TermQueries.Add((field, value));
             return query;

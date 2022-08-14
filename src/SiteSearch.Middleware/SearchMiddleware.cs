@@ -30,6 +30,7 @@ namespace SiteSearch.Middleware
                 };
 
             var queryDefinition = new SearchQuery();
+            queryDefinition.FacetOn(x => x.Field("category"), 100);
 
             if (currentCriteria.Limit.HasValue)
             {
@@ -48,7 +49,7 @@ namespace SiteSearch.Middleware
 
                         queryDefinition =
                             queryDefinition.TermQuery(
-                                field.PropertyInfo.Name.ToLower(),
+                                field,
                                 val
                             );
                     }

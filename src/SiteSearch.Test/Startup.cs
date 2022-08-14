@@ -107,7 +107,7 @@ namespace SiteSearch.Test
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            static string Hash(string input)
+            static string hash(string input)
             {
                 using (var sha1 = SHA1.Create())
                 {
@@ -135,7 +135,7 @@ namespace SiteSearch.Test
                     {
                         var testItem = new SearchItem
                         {
-                            Id = Hash($"{item.Headline} {item.Link}"),
+                            Id = hash($"{item.Headline} {item.Link}"),
                             Url = item.Link,
                             Title = item.Headline,
                             Category = item.Category,
@@ -145,7 +145,7 @@ namespace SiteSearch.Test
                         await context.IndexAsync(testItem);
                         processed++;
 
-                        if (processed > 3000)
+                        if (processed > 100)
                         {
                             break;
                         }

@@ -20,6 +20,21 @@
     #search-results input[type='text'] {
         width: 100%;
     }
+
+    #search-results .search-facets {
+        float: left;
+        width: 25%;
+    }
+
+    #search-results .search-facets h2 {
+        margin-top: 0;
+        padding-top: 0;
+    }
+
+    #search-results .search-items {
+        float: left;
+        width: 75%;
+    }
 </style>
 
 <div id="search-results">
@@ -30,6 +45,18 @@
         </div>
         <button type="submit" class="mui-btn mui-btn--primary">Search</button>
     </form>
+    </div>
+    <div class="search-facets">
+        @foreach (var facetGroup in Model.FacetGroups)
+        {
+            <h2>@facetGroup.Field</h2>
+            <ul>
+            @foreach (var facet in facetGroup.Facets)
+            {
+                <li>@facet.Key (@facet.Count)</li>
+            }
+            </ul>
+        }
     </div>
     <div class="search-items">
         @if (Model.Hits.Any())
@@ -43,7 +70,7 @@
                 {
                     <div class="result">
                         <h2>
-                            <a href="@item.Url">@Html.Raw(item.Title)</a>
+                            <a href="@item.Url" target="_blank">@Html.Raw(item.Title)</a>
                         </h2>
                         <p>@Html.Raw(item.Precis)</p>
                     </div>

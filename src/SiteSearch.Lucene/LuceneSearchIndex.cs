@@ -66,9 +66,21 @@ namespace SiteSearch.Lucene
                         // Term queries
                         foreach (var termQuery in queryDefinition.TermQueries)
                         {
-                            var parser = new QueryParser(index.MATCH_LUCENE_VERSION, termQuery.field, analyzer);
-                            var query = parser.Parse(termQuery.value);
-                            mainQuery.Add(query, Occur.MUST);
+                            if (termQuery.field.Keyword)
+                            {
+                                var query = new TermQuery(
+                                    new Term(termQuery.field.PropertyInfo.Name.ToLower(),
+                                        termQuery.value
+                                    )
+                                );
+                                mainQuery.Add(query, Occur.MUST);
+                            }
+                            else
+                            {
+                                var parser = new QueryParser(index.MATCH_LUCENE_VERSION, termQuery.field.PropertyInfo.Name.ToLower(), analyzer);
+                                var query = parser.Parse(termQuery.value);
+                                mainQuery.Add(query, Occur.MUST);
+                            }
                         }
                     }
                     else
@@ -102,10 +114,13 @@ namespace SiteSearch.Lucene
                             {
                                 var facetGroup = new FacetGroup { Field = facet };
                                 facetGroup.Facets =
-                                    facets.GetTopChildren(queryDefinition.FacetMax, facet).LabelValues
+                                    facets.GetTopChildren(queryDefinition.FacetMax, facet)?.LabelValues?
                                         .Select(x => new Facet { Key = x.Label, Count = (long)x.Value })
-                                        .ToArray();
-                                result.FacetGroups.Add(facetGroup);
+                                        .ToArray() ?? new Facet[0];
+                                if (facetGroup.Facets.Any())
+                                {
+                                    result.FacetGroups.Add(facetGroup);
+                                }
                             }
                         }
                     }
