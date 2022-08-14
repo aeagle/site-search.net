@@ -2,16 +2,30 @@
 
 _Note SiteSearch.NET is work in progress_
 
-A simple full text search abstraction with a Lucene.NET file-based implementation and .NET middleware allowing search interfaces to be quickly built.
+A simple full text search abstraction with an in-process Lucene.NET file-based implementation and .NET middleware allowing search interfaces to be quickly built.
 
 - Ingestion
 - Full text search
 - Paging
 - Faceting
 
-## Usage
+## Why?
 
-Given a class to represent searchable items:
+There a many full text search engines available. Popular Lucene based search engines for example are `Elastic` and `SOLR`. These usually require specific server setup or clusters which provide redundency and highly available instances. For very simple search UIs on simple websites can often be overkill.
+
+This abstraction and the provided Lucene implementation aims to allow quick setup up of a basic file based searchable index of documents as an in-process search engine allowing it to be used on even the most basic website hosting.
+
+Because all search functionality is abstracted a different server/cluster based search engine could be implemented and replace the file based Lucene implementation later without too much effort.
+
+## Aims
+
+- To provide an easy way to map query string values to search criteria
+- Allow flexibility in ingestion of content either offline or online via background jobs
+- Provide out of the box common paging and faceting / filtering functionality found on most search interfaces
+
+## Basic usage
+
+First we start with a class to represent searchable items:
 
 ```csharp
 public class SearchItem {
@@ -39,6 +53,8 @@ public class SearchItem {
 }
 ```
 
+#### App startup
+
 Setup the search services:
 
 ```csharp
@@ -56,6 +72,8 @@ public void ConfigureServices(IServiceCollection services)
 }
 ```
 
+Here we pass the root path of the file-based index that will be used to store the content.
+
 Setup the search middleware:
 
 ```csharp
@@ -68,6 +86,10 @@ public void Configure(IApplicationBuilder app)
     ...
 }
 ```
+
+When requests are made to the path specified `/search`, SiteSearch.NET will automatically perform searches based on the criteria passed in the query string of the request and place the results in a search context.
+
+#### Ingestion
 
 Ensure the search index exists and ingest some content:
 
@@ -82,7 +104,9 @@ await searchIndex.IndexAsync(new SearchItem {
 
 ```
 
-Pull the search context from your 'search controller action' and pass it to a view:
+#### Exposing the search interface
+
+Using dependency injection, you can inject the `SearchContext`. This context contains everything you need to display a search UI for the current search result. Here we pass it directly to a view:
 
 ```csharp
 
@@ -96,7 +120,7 @@ public class HomeController : Controller
         this.searchContext = searchContext ?? throw new ArgumentNullException(nameof(searchContext));
     }
 
-    [Route("search")]
+    [Route("search")] // Matches the path configured on startup
     public IActionResult Search()
     {
         return View(searchContext.Get<SearchItem>());
