@@ -126,9 +126,7 @@ namespace SiteSearch.Test
                 }
             }
 
-            var serializer = new JsonSerializer();
-
-            using (var stream = File.OpenRead(@"C:\Projects\site-search.net\src\archive\News_Category_Dataset_v2.json"))
+            using (var stream = File.OpenRead(@"C:\Projects\site-search-net\src\SiteSearch.Test\News_Category_Dataset_v2.json"))
             using (var sr = new StreamReader(stream))
             {
                 var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
