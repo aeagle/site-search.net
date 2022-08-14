@@ -137,7 +137,7 @@ Render the search results and related information:
 
 ## Test news article dataset
 
-The SiteSearch.Test projects demonstrates a search page using the following dataset:
+The SiteSearch.Test project demonstrates a search page using the following dataset:
 
 - https://www.kaggle.com/datasets/rmisra/news-category-dataset
 
