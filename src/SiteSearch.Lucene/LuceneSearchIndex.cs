@@ -231,25 +231,28 @@ namespace SiteSearch.Lucene
                 var metaData = field.Value;
                 var value = metaData.PropertyInfo.GetValue(document);
 
-                if (metaData.Keyword)
+                if (value != default)
                 {
-                    doc.Add(
-                        new StringField(
-                            field.Key,
-                            value.ToString(),
-                            metaData.Store ? Field.Store.YES : Field.Store.NO
-                        )
-                    );
-                }
-                else
-                {
-                    doc.Add(
-                        new TextField(
-                            field.Key,
-                            value.ToString(),
-                            metaData.Store ? Field.Store.YES : Field.Store.NO
-                        )
-                    );
+                    if (metaData.Keyword)
+                    {
+                        doc.Add(
+                            new StringField(
+                                field.Key,
+                                value.ToString(),
+                                metaData.Store ? Field.Store.YES : Field.Store.NO
+                            )
+                        );
+                    }
+                    else
+                    {
+                        doc.Add(
+                            new TextField(
+                                field.Key,
+                                value.ToString(),
+                                metaData.Store ? Field.Store.YES : Field.Store.NO
+                            )
+                        );
+                    }
                 }
             }
 

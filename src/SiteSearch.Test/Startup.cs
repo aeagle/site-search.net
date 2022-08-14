@@ -1,15 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SiteSearch.Core.Interfaces;
 using SiteSearch.Lucene;
 using SiteSearch.Middleware;
+using SiteSearch.Test.Models;
 
 namespace SiteSearch.Test
 {
@@ -31,6 +37,7 @@ namespace SiteSearch.Test
                 return Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
             });
 
+            services.AddHostedService<CreateSearchIndex>();
             services.AddHostedService<SetupSearchIndex>(); 
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
@@ -39,7 +46,8 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(
             IApplicationBuilder app, 
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            ISearchIndex<SearchItem> searchIndex)
         {   
             if (env.IsDevelopment())
             {
@@ -70,7 +78,27 @@ namespace SiteSearch.Test
         }
     }
 
-    public class SetupSearchIndex : IHostedService
+    public class CreateSearchIndex : IHostedService
+    {
+        private readonly ISearchIndex<SearchItem> searchIndex;
+
+        public CreateSearchIndex(ISearchIndex<SearchItem> searchIndex)
+        {
+            this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            return searchIndex.CreateIndexAsync();
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    public class SetupSearchIndex : BackgroundService
     {
         private readonly ISearchIndex<SearchItem> searchIndex;
 
@@ -79,33 +107,67 @@ namespace SiteSearch.Test
             this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            await searchIndex.CreateIndexAsync();
-
-            var testItem = new SearchItem
+            static string Hash(string input)
             {
-                Id = "1234",
-                Url = "https://www.google.com",
-                Title = "This is a test item",
-                Precis = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur.",
-                Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
-            };
+                using (var sha1 = new SHA1Managed())
+                {
+                    var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
+                    var sb = new StringBuilder(hash.Length * 2);
 
-            await searchIndex.IndexAsync(testItem);
+                    foreach (byte b in hash)
+                    {
+                        // can be "x2" if you want lowercase
+                        sb.Append(b.ToString("X2"));
+                    }
 
-            testItem = new SearchItem
+                    return sb.ToString();
+                }
+            }
+
+            var serializer = new JsonSerializer();
+
+            using (var stream = File.OpenRead(@"C:\Projects\site-search.net\src\archive\News_Category_Dataset_v2.json"))
+            using (var sr = new StreamReader(stream))
             {
-                Id = "4321",
-                Url = "https://www.google.com",
-                Title = "Red green yellow blue",
-                Precis = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur.",
-                Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
-            };
+                var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
+                var processed = 0;
+                foreach (var item in items)
+                {
+                    var testItem = new SearchItem
+                    {
+                        Id = Hash($"{item.Headline} {item.Link}"),
+                        Url = item.Link,
+                        Title = item.Headline,
+                        Precis = item.Short_Description
+                    };
 
-            await searchIndex.IndexAsync(testItem);
+                    await searchIndex.IndexAsync(testItem);
+                    processed++;
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                }
+            }
         }
+    }
 
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public static class JsonExtensions
+    {
+        public static IEnumerable<T> WalkObjects<T>(StreamReader textReader)
+        {
+            string line = null;
+            do
+            {
+                line = textReader.ReadLine();
+                if (line != null)
+                {
+                    yield return JsonConvert.DeserializeObject<T>(line);
+                }
+            } while (line != null);
+        }
     }
 }
