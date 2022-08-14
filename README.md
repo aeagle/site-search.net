@@ -11,7 +11,7 @@ A simple full text search abstraction with an in-process Lucene.NET file-based i
 
 ## Why?
 
-There a many full text search engines available. Popular Lucene based search engines for example are `Elastic` and `SOLR`. These usually require specific server setup or clusters which provide redundency and highly available instances. For very simple search UIs on simple websites can often be overkill.
+There a many full text search engines available. Popular Lucene based search engines for example are `Elastic` and `SOLR`. These usually require specific server setup or clusters which provide redundency and highly available instances. For very simple search UIs on simple websites, this can often be overkill.
 
 This abstraction and the provided Lucene implementation aims to allow quick setup up of a basic file based searchable index of documents as an in-process search engine allowing it to be used on even the most basic website hosting.
 
