@@ -32,7 +32,8 @@ namespace SiteSearch.Core.Utils
                                     Id = property.HasAttribute<IdAttribute>(),
                                     Keyword = property.HasAttribute<KeywordAttribute>(),
                                     Store = property.HasAttribute<StoreAttribute>(),
-                                    Facet = property.HasAttribute<TermFacetAttribute>()
+                                    Facet = property.HasAttribute<TermFacetAttribute>(),
+                                    Alias = property.GetCustomAttribute<SearchAliasAttribute>()?.Alias
                                 }
                             );
                         }

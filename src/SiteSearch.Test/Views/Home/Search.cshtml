@@ -26,7 +26,7 @@
     <div class="mui-panel">
     <form class="mui-form--inline">
         <div class="mui-textfield">
-            <input type="text" autofocus name="q" value="@Model.CurrentCriteria.Term" placeholder="Search ..." style="padding: 5px 10px;" />
+            <input type="text" autofocus name="q" value="@Model.CurrentCriteria.GetCriteriaValueByAlias("q")" placeholder="Search ..." style="padding: 5px 10px;" />
         </div>
         <button type="submit" class="mui-btn mui-btn--primary">Search</button>
     </form>

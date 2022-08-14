@@ -14,6 +14,15 @@ namespace SiteSearch.Core.Models
     public class SearchCurrentCriteria
     {
         public int? Limit { get; set; }
-        public string Term { get; set; }
+        public IList<SearchFieldCriteria> FieldCriteria { get; set; } = new List<SearchFieldCriteria>();
+
+        public string GetCriteriaValueByAlias(string alias) =>
+            FieldCriteria.FirstOrDefault(x => x.Field.Alias == alias)?.Value;
+    }
+
+    public class SearchFieldCriteria
+    { 
+        public SearchFieldInfo Field { get; set; }
+        public string Value { get; set; }
     }
 }

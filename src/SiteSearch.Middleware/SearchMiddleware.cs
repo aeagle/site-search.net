@@ -26,7 +26,6 @@ namespace SiteSearch.Middleware
             var currentCriteria =
                 new SearchCurrentCriteria
                 {
-                    Term = context.Request.Query["q"],
                     Limit = context.Request.Query["ps"].ParseInt()
                 };
 
@@ -37,15 +36,30 @@ namespace SiteSearch.Middleware
                 queryDefinition = queryDefinition.Limit(currentCriteria.Limit.Value);
             }
 
-            if (!string.IsNullOrEmpty(currentCriteria.Term))
+            foreach (var criteria in context.Request.Query)
             {
-                queryDefinition = queryDefinition.TermQuery("text", currentCriteria.Term);
+                var val = context.Request.Query[criteria.Key];
+                if (!string.IsNullOrEmpty(val))
+                {
+                    var field = searchIndex.GetSearchFieldByAlias(criteria.Key);
+                    if (field != null)
+                    {
+                        currentCriteria.FieldCriteria.Add(new SearchFieldCriteria { Field = field, Value = val });
+
+                        queryDefinition =
+                            queryDefinition.TermQuery(
+                                field.PropertyInfo.Name.ToLower(),
+                                val
+                            );
+                    }
+                }
             }
 
             // Do search
             var result = await searchIndex.SearchAsync(queryDefinition);
             result.CurrentCriteria = currentCriteria;
 
+            // Store result in search context
             searchContext.Set(result);
 
             // Call the next delegate/middleware in the pipeline

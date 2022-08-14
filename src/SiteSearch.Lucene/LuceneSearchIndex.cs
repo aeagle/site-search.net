@@ -9,10 +9,10 @@ using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
 using Nito.AsyncEx;
+using SiteSearch.Core;
 using SiteSearch.Core.Extensions;
 using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
-using SiteSearch.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,20 +22,18 @@ using System.Threading.Tasks;
 
 namespace SiteSearch.Lucene
 {
-    public class LuceneSearchIndex<T> : ISearchIndex<T> where T : class, new()
+    public class LuceneSearchIndex<T> : BaseSearchIndex<T>, ISearchIndex<T> where T : class, new()
     {
         private const LuceneVersion MATCH_LUCENE_VERSION = LuceneVersion.LUCENE_48;
         private readonly string indexType;
         private readonly LuceneSearchIndexOptions options;
-        private readonly SearchMetaData searchMetaData;
         private static AsyncReaderWriterLock writerLock = new AsyncReaderWriterLock();
 
         private Analyzer SetupAnalyzer() => new StandardAnalyzer(MATCH_LUCENE_VERSION);
 
-        public LuceneSearchIndex()
+        public LuceneSearchIndex() : base()
         {
             indexType = typeof(T).AssemblyQualifiedName.SafeFilename();
-            searchMetaData = SearchMetaDataUtility.GetMetaData<T>();
         }
 
         public LuceneSearchIndex(LuceneSearchIndexOptions options) : this()
@@ -98,6 +96,19 @@ namespace SiteSearch.Lucene
                         writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), docToIndex);
                     }
 
+                    writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
+                    writer.DocsWriter.Commit();
+                }
+            }
+        }
+
+        public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+        {
+            using (await writerLock.WriterLockAsync(cancellationToken))
+            {
+                using (var writer = getWriter())
+                {
+                    writer.DocsWriter.DeleteDocuments(new Term("_id", id));
                     writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
                     writer.DocsWriter.Commit();
                 }

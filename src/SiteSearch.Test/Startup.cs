@@ -38,7 +38,7 @@ namespace SiteSearch.Test
             });
 
             services.AddHostedService<CreateSearchIndex>();
-            services.AddHostedService<SetupSearchIndex>(); 
+            //services.AddHostedService<SetupSearchIndex>(); 
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
@@ -87,9 +87,9 @@ namespace SiteSearch.Test
             this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            return searchIndex.CreateIndexAsync();
+            await searchIndex.CreateIndexAsync();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

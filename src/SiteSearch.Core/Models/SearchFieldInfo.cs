@@ -9,5 +9,6 @@ namespace SiteSearch.Core.Models
         public bool Keyword { get; set; }
         public bool Store { get; set; }
         public bool Facet { get; set; }
+        public string Alias { get; set; }
     }
 }
