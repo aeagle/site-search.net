@@ -15,6 +15,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SiteSearch.Core.Extensions;
+using SiteSearch.Lucene.Middleware;
+using SiteSearch.Lucene.Extensions;
 
 namespace SiteSearch.Test
 {
@@ -30,10 +32,15 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Setup Lucene file-based implementation
             string getRootIndexPath(IWebHostEnvironment hostingEnvironment) =>
                 Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
 
-            services.AddLuceneSearch<SearchItem>((ctx) => getRootIndexPath(ctx.GetRequiredService<IWebHostEnvironment>()));
+            services.AddLuceneSearch<SearchItem>((opts, ctx) => opts
+                .IndexPath(getRootIndexPath(ctx.GetRequiredService<IWebHostEnvironment>()))
+            );
+
+            // Demo index setup
             services.AddHostedService<CreateSearchIndex>();
             services.AddHostedService((ctx) => 
                 new SetupSearchIndex(
@@ -132,35 +139,39 @@ namespace SiteSearch.Test
                 }
             }
 
-            using (var context = searchIndex.StartUpdates())
+            var sourceDataFilename = $@"{appRootPath}\News_Category_Dataset_v2.json";
+            if (File.Exists(sourceDataFilename))
             {
-                using (var stream = File.OpenRead($@"{appRootPath}\News_Category_Dataset_v2.json"))
-                using (var sr = new StreamReader(stream))
+                using (var context = searchIndex.StartUpdates())
                 {
-                    var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
-                    var processed = 0;
-                    foreach (var item in items)
+                    using (var stream = File.OpenRead(sourceDataFilename))
+                    using (var sr = new StreamReader(stream))
                     {
-                        var testItem = new SearchItem
+                        var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
+                        var processed = 0;
+                        foreach (var item in items)
                         {
-                            Id = hash($"{item.Headline} {item.Link}"),
-                            PublicationDate = item.Date,
-                            Url = item.Link,
-                            Title = item.Headline,
-                            Category = item.Category,
-                            Precis = item.Short_Description
-                        };
+                            var testItem = new SearchItem
+                            {
+                                Id = hash($"{item.Headline} {item.Link}"),
+                                PublicationDate = item.Date,
+                                Url = item.Link,
+                                Title = item.Headline,
+                                Category = item.Category,
+                                Precis = item.Short_Description
+                            };
 
-                        await context.IndexAsync(testItem);
-                        processed++;
+                            await context.IndexAsync(testItem);
+                            processed++;
 
-                        if (processed == 10000)
-                        {
-                            break;
-                        }
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
+                            if (processed == 10000)
+                            {
+                                break;
+                            }
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                break;
+                            }
                         }
                     }
                 }

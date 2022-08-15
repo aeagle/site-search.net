@@ -11,7 +11,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Middleware", "Si
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Test", "SiteSearch.Test\SiteSearch.Test.csproj", "{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Elastic", "SiteSearch.Elastic\SiteSearch.Elastic.csproj", "{681B3C6E-FA48-4343-9214-3302CC2372B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Elastic", "SiteSearch.Elastic\SiteSearch.Elastic.csproj", "{681B3C6E-FA48-4343-9214-3302CC2372B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1EF38B42-86BF-4CDB-A5A4-D8A3264E06BD}"
+	ProjectSection(SolutionItems) = preProject
+		nuget.config = nuget.config
+		SiteSearch.Core.nuspec = SiteSearch.Core.nuspec
+		SiteSearch.Lucene.nuspec = SiteSearch.Lucene.nuspec
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
