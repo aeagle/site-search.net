@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>SiteSearch.Core</id>
+    <title xmlns="">SiteSearch.Core</title>
+    <authors>Allan Eagle</authors>
+    <owners>Allan Eagle</owners>
+    <projectUrl>https://github.com/aeagle/blazor-spaces</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Full text search engine abstraction and AspNetCore middleware allowing search interfaces to be built easily</description>
+    <tags>Full-text Search Lucene Faceting Paging Sorting</tags>
+    <version>0.0.1-beta.2</version>
+    <dependencies>
+		<group targetFramework="netstandard2.0">
+			<dependency id="Microsoft.Extensions.Primitives" version="6.0.0" />
+			<dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="6.0.0" />
+			<dependency id="Microsoft.AspNetCore.Http.Abstractions" version="2.2.0" />
+			<dependency id="Newtonsoft.Json" version="13.0.1" />
+		</group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="SiteSearch.Core\bin\Debug\netstandard2.0\SiteSearch.Core.deps.json" target="lib\netstandard2.0" />
+    <file src="SiteSearch.Core\bin\Debug\netstandard2.0\SiteSearch.Core.dll" target="lib\netstandard2.0" />
+    <file src="SiteSearch.Core\bin\Debug\netstandard2.0\SiteSearch.Core.pdb" target="lib\netstandard2.0" />
+	<file src="SiteSearch.Middleware\bin\Debug\netstandard2.0\SiteSearch.Middleware.deps.json" target="lib\netstandard2.0" />
+	<file src="SiteSearch.Middleware\bin\Debug\netstandard2.0\SiteSearch.Middleware.dll" target="lib\netstandard2.0" />
+	<file src="SiteSearch.Middleware\bin\Debug\netstandard2.0\SiteSearch.Middleware.pdb" target="lib\netstandard2.0" />
+  </files>
+</package>

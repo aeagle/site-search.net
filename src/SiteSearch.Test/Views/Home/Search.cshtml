@@ -1,33 +1,136 @@
-﻿@using SiteSearch.Middleware
+﻿@model SearchResult<SearchItem>;
+@using SiteSearch.Core.Models
+@using SiteSearch.Middleware
 @{
     ViewData["Title"] = "Home Page";
-    var searchResult = Context.GetSearchResult<SearchItem>();
 }
 
-<div>
-    <form method="get">
+<style>
+    #search-results {
+        margin-left: auto;
+        margin-right: auto;
+        width: calc(100% - 200px);
+    }
 
-        <div style="margin: 20px 0">
-            <input type="text" name="q" value="@searchResult.CurrentCriteria.Term" placeholder="Search ..." style="width: 100%; padding: 5px 10px;" />
-            <button type="submit">Search</button>
+    #search-results .mui-textfield {
+            display: inline-block;
+            width: calc(100% - 117px);
+    }
+
+    #search-results input[type='text'] {
+        width: 100%;
+        font-size: 18px;
+    }
+    #search-results .layout {
+        display: flex;
+    }
+
+    #search-results .search-facets {
+        width: 250px;
+    }
+
+    #search-results .search-items {
+        width: calc(100% - 250px);
+        margin-left: 15px;
+    }
+
+    #search-results .search-facets h2 {
+        margin-top: -5px;
+        padding-top: 0;
+    }
+
+    #search-results .search-facets ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    #search-results .search-facets a {
+        color: navy;
+    }
+
+    #search-results .tag {
+        text-transform:uppercase;
+        font-size: 12px;
+        font-weight: bold;
+        display:block;
+        color: black;
+        line-height: 1.2;
+        text-decoration: none;
+    }
+
+    #search-results .result h2 {
+        margin: 0;
+        padding: 5px 0;
+    }
+
+    #search-results .result h2 a {
+        color: navy;
+    }
+
+    .mui-form--inline {
+        margin-left: 150px;
+        margin-right: 150px;
+        margin-bottom: 25px;
+    }
+
+    .publication-date {
+        font-weight: bold;
+    }
+
+</style>
+
+<div id="search-results">
+    <h1>Super-duper search</h1>
+
+    <form class="mui-form--inline">
+        <div class="mui-textfield">
+            <input type="text" autofocus name="q" value="@Model.CurrentCriteria.GetCriteriaValueByAlias("q")" placeholder="Search ..." style="padding: 5px 10px;" />
         </div>
+        <button type="submit" class="mui-btn mui-btn--primary">Search</button>
+    </form>
 
+    <div class="layout">
+        <div class="search-facets">
+            @if (Model.CurrentCriteria.FieldCriteria.Any())
+            {
+                <h2>Applied criteria</h2>
+                <ul>
+                    @foreach (var criteria in Model.CurrentCriteria.FieldCriteria)
+                    {
+                        <li>@(criteria.Name): @criteria.Value <a href="@criteria.RemoveUrl">X</a></li>
+                    }
+                </ul>
+            }
+            @foreach (var facetGroup in Model.FacetGroups)
+            {
+                <h2>@facetGroup.DisplayName</h2>
+                <ul>
+                @foreach (var facet in facetGroup.Facets)
+                {
+                    <li><a href="@facet.DrillDownUrl">@facet.Name</a> (@facet.Count)</li>
+                }
+                </ul>
+            }
+        </div>
         <div class="search-items">
-            @if (searchResult.Hits.Any())
+            @if (Model.Hits.Any())
             {
                 <p>
-                    Showing @searchResult.Hits.Count() of @searchResult.TotalHits results ...
+                    Showing @Model.Hits.Count() of @Model.TotalHits results ...
                 </p>
 
                 <div class="result-list">
-                    @foreach (var item in searchResult.Hits)
+                    @foreach (var item in Model.Hits)
                     {
                         <div class="result">
                             <h2>
-                                <a href="@item.Url">@Html.Raw(item.Title)</a>
+                                <span class="tag">@item.Category</span>
+                                <a href="@item.Url" target="_blank">@Html.Raw(item.Title)</a>
                             </h2>
+                            <div class="publication-date">@item.PublicationDate.ToString("dd MMM yyyy")</div>
                             <p>@Html.Raw(item.Precis)</p>
                         </div>
+                        <hr />
                     }
                 </div>
             }
@@ -36,5 +139,5 @@
                 <p>No results found.</p>
             }
         </div>
-    </form>
+    </div>
 </div>

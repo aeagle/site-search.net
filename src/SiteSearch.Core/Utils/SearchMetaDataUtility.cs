@@ -3,6 +3,7 @@ using SiteSearch.Core.Extensions;
 using System.Reflection;
 using System.Collections.Concurrent;
 using System;
+using System.ComponentModel;
 
 namespace SiteSearch.Core.Utils
 {
@@ -25,14 +26,16 @@ namespace SiteSearch.Core.Utils
                         if (property.CanRead && !property.IsPropertyACollection())
                         {
                             result.Fields.Add(
-                                property.Name.ToLower(),
+                                property.Name,
                                 new SearchFieldInfo
                                 {
                                     PropertyInfo = property,
                                     Id = property.HasAttribute<IdAttribute>(),
                                     Keyword = property.HasAttribute<KeywordAttribute>(),
                                     Store = property.HasAttribute<StoreAttribute>(),
-                                    Facet = property.HasAttribute<TermFacetAttribute>()
+                                    Facet = property.HasAttribute<TermFacetAttribute>(),
+                                    Alias = property.GetCustomAttribute<SearchAliasAttribute>()?.Alias,
+                                    DisplayName = property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName
                                 }
                             );
                         }

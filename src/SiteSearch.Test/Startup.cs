@@ -1,15 +1,22 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using SiteSearch.Core.Interfaces;
-using SiteSearch.Lucene;
 using SiteSearch.Middleware;
+using SiteSearch.Test.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using SiteSearch.Core.Extensions;
+using SiteSearch.Lucene.Middleware;
+using SiteSearch.Lucene.Extensions;
 
 namespace SiteSearch.Test
 {
@@ -25,21 +32,28 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLuceneSearch<SearchItem>((ctx) =>
-            {
-                var hostingEnvironment = ctx.GetRequiredService<IWebHostEnvironment>();
-                return Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
-            });
+            // Setup Lucene file-based implementation
+            string getRootIndexPath(IWebHostEnvironment hostingEnvironment) =>
+                Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
 
-            services.AddHostedService<SetupSearchIndex>(); 
+            services.AddLuceneSearch<SearchItem>((opts, ctx) => opts
+                .IndexPath(getRootIndexPath(ctx.GetRequiredService<IWebHostEnvironment>()))
+            );
+
+            // Demo index setup
+            services.AddHostedService<CreateSearchIndex>();
+            services.AddHostedService((ctx) => 
+                new SetupSearchIndex(
+                    ctx.GetRequiredService<ISearchIndex<SearchItem>>(),
+                    ctx.GetRequiredService<IWebHostEnvironment>().ContentRootPath
+                )
+            );
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(
-            IApplicationBuilder app, 
-            IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {   
             if (env.IsDevelopment())
             {
@@ -59,7 +73,12 @@ namespace SiteSearch.Test
 
             app.UseAuthorization();
 
-            app.UseSearch<SearchItem>("/search");
+            app.UseSearch<SearchItem>(
+                "/search",
+                opts => opts
+                    .FacetOn(x => x.Field(f => f.Category))
+                    .FacetOn(x => x.Field(f => f.MonthYear))
+            );
 
             app.UseEndpoints(endpoints =>
             {
@@ -70,11 +89,11 @@ namespace SiteSearch.Test
         }
     }
 
-    public class SetupSearchIndex : IHostedService
+    public class CreateSearchIndex : IHostedService
     {
         private readonly ISearchIndex<SearchItem> searchIndex;
 
-        public SetupSearchIndex(ISearchIndex<SearchItem> searchIndex)
+        public CreateSearchIndex(ISearchIndex<SearchItem> searchIndex)
         {
             this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
         }
@@ -82,30 +101,97 @@ namespace SiteSearch.Test
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await searchIndex.CreateIndexAsync();
-
-            var testItem = new SearchItem
-            {
-                Id = "1234",
-                Url = "https://www.google.com",
-                Title = "This is a test item",
-                Precis = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur.",
-                Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
-            };
-
-            await searchIndex.IndexAsync(testItem);
-
-            testItem = new SearchItem
-            {
-                Id = "4321",
-                Url = "https://www.google.com",
-                Title = "Red green yellow blue",
-                Precis = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur.",
-                Body = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum hic aut, ex voluptatibus quidem autem, ipsam expedita tempora nisi possimus nam laboriosam in voluptates consectetur eligendi reprehenderit quibusdam velit aspernatur."
-            };
-
-            await searchIndex.IndexAsync(testItem);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    public class SetupSearchIndex : BackgroundService
+    {
+        private readonly ISearchIndex<SearchItem> searchIndex;
+        private readonly string appRootPath;
+
+        public SetupSearchIndex(ISearchIndex<SearchItem> searchIndex, string appRootPath)
+        {
+            this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+            this.appRootPath = appRootPath ?? throw new ArgumentNullException(nameof(appRootPath));
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            static string hash(string input)
+            {
+                using (var sha1 = SHA1.Create())
+                {
+                    var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
+                    var sb = new StringBuilder(hash.Length * 2);
+
+                    foreach (byte b in hash)
+                    {
+                        // can be "x2" if you want lowercase
+                        sb.Append(b.ToString("X2"));
+                    }
+
+                    return sb.ToString();
+                }
+            }
+
+            var sourceDataFilename = $@"{appRootPath}\News_Category_Dataset_v2.json";
+            if (File.Exists(sourceDataFilename))
+            {
+                using (var context = searchIndex.StartUpdates())
+                {
+                    using (var stream = File.OpenRead(sourceDataFilename))
+                    using (var sr = new StreamReader(stream))
+                    {
+                        var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
+                        var processed = 0;
+                        foreach (var item in items)
+                        {
+                            var testItem = new SearchItem
+                            {
+                                Id = hash($"{item.Headline} {item.Link}"),
+                                PublicationDate = item.Date,
+                                Url = item.Link,
+                                Title = item.Headline,
+                                Category = item.Category,
+                                Precis = item.Short_Description
+                            };
+
+                            await context.IndexAsync(testItem);
+                            processed++;
+
+                            if (processed == 10000)
+                            {
+                                break;
+                            }
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static class JsonExtensions
+    {
+        public static IEnumerable<T> WalkObjects<T>(StreamReader textReader)
+        {
+            string line = null;
+            do
+            {
+                line = textReader.ReadLine();
+                if (line != null)
+                {
+                    yield return JsonConvert.DeserializeObject<T>(line);
+                }
+            } while (line != null);
+        }
     }
 }

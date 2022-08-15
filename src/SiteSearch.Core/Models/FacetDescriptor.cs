@@ -1,17 +1,24 @@
-﻿namespace SiteSearch.Core.Models
-{
-    public class FacetDescriptor
-    {
-        private readonly SearchQuery searchQuery;
+﻿using SiteSearch.Core.Extensions;
+using SiteSearch.Core.Interfaces;
+using System;
+using System.Linq.Expressions;
 
-        public FacetDescriptor(SearchQuery searchQuery)
+namespace SiteSearch.Core.Models
+{
+    public class FacetDescriptor<T>
+    {
+        private readonly ISearchIndex<T> searchIndex;
+        private readonly ISearchFacetOnConfig config;
+
+        public FacetDescriptor(ISearchFacetOnConfig config, ISearchIndex<T> searchIndex)
         {
-            this.searchQuery = searchQuery;
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
         }
 
-        public FacetDescriptor Field(string field)
+        public FacetDescriptor<T> Field(Expression<Func<T, object>> field, int maxFacets = 20)
         {
-            searchQuery.Facets.Add(field);
+            config.FacetOn.Add((searchIndex.GetSearchFieldByName(field.GetPropertyInfo().Name), maxFacets));
             return this;
         }
     }

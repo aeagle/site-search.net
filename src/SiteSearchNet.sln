@@ -1,15 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29215.179
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Core", "SiteSearch.Core\SiteSearch.Core.csproj", "{F454A313-D1BB-4CAD-BC08-2CB20EF483DC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Lucene", "SiteSearch.Lucene\SiteSearch.Lucene.csproj", "{043E4002-47E9-4C3F-A11D-9C177048396E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Middleware", "SiteSearch.Middleware\SiteSearch.Middleware.csproj", "{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Middleware", "SiteSearch.Middleware\SiteSearch.Middleware.csproj", "{9660DBC4-AF58-4EC1-9C72-5F76827F83F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteSearch.Test", "SiteSearch.Test\SiteSearch.Test.csproj", "{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Test", "SiteSearch.Test\SiteSearch.Test.csproj", "{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteSearch.Elastic", "SiteSearch.Elastic\SiteSearch.Elastic.csproj", "{681B3C6E-FA48-4343-9214-3302CC2372B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1EF38B42-86BF-4CDB-A5A4-D8A3264E06BD}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		nuget.config = nuget.config
+		SiteSearch.Core.nuspec = SiteSearch.Core.nuspec
+		SiteSearch.Lucene.nuspec = SiteSearch.Lucene.nuspec
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +43,10 @@ Global
 		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65243E0C-D786-4CB4-A1BE-170B6B08EE2C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{681B3C6E-FA48-4343-9214-3302CC2372B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{681B3C6E-FA48-4343-9214-3302CC2372B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{681B3C6E-FA48-4343-9214-3302CC2372B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{681B3C6E-FA48-4343-9214-3302CC2372B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
