@@ -25,7 +25,7 @@ namespace SiteSearch.Core.Models
                     var field = searchIndex.GetSearchFieldByAlias(key);
                     if (field != null)
                     {
-                        FieldCriteria.Add(new SearchFieldCriteria { Field = field, Value = val });
+                        FieldCriteria.Add(new SearchFieldCriteria(Criteria) { Field = field, Value = val });
                     }
                 }
             }
@@ -39,8 +39,16 @@ namespace SiteSearch.Core.Models
 
         public class SearchFieldCriteria
         {
+            private readonly NameValueCollection currentCriteria;
+
+            public SearchFieldCriteria(NameValueCollection currentCriteria)
+            {
+                this.currentCriteria = currentCriteria ?? throw new ArgumentNullException(nameof(currentCriteria));
+            }
+
             public SearchFieldInfo Field { get; set; }
             public string Value { get; set; }
+            public string RemoveUrl => $"?{currentCriteria.RemoveCriteria(Field.Alias, Value).AsQueryString()}";
         }
     }
 }

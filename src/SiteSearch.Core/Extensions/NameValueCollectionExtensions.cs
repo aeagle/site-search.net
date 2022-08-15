@@ -13,6 +13,13 @@ namespace SiteSearch.Core.Extensions
             return newCriteria;
         }
 
+        public static NameValueCollection RemoveCriteria(this NameValueCollection existing, string key, string value)
+        {
+            var newCriteria = new NameValueCollection(existing);
+            newCriteria.Remove(key);
+            return newCriteria;
+        }
+
         public static string AsQueryString(this NameValueCollection collection)
         {
             return string.Join("&", collection.AllKeys.Select(a => a + "=" + WebUtility.UrlEncode(collection[a])));

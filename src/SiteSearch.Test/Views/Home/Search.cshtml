@@ -51,6 +51,16 @@
     </div>
     <div class="layout">
         <div class="search-facets">
+            @if (Model.CurrentCriteria.FieldCriteria.Any())
+            {
+                <h2>Applied criteria</h2>
+                <ul>
+                    @foreach (var criteria in Model.CurrentCriteria.FieldCriteria)
+                    {
+                        <li>@(criteria.Field.DisplayName ?? criteria.Field.PropertyInfo.Name): @criteria.Value <a href="@criteria.RemoveUrl">X</a></li>
+                    }
+                </ul>
+            }
             @foreach (var facetGroup in Model.FacetGroups)
             {
                 <h2>@facetGroup.DisplayName</h2>
