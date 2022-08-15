@@ -38,6 +38,34 @@
         padding-top: 0;
     }
 
+    #search-results .search-facets ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    #search-results .search-facets a {
+        color: navy;
+    }
+
+    #search-results .tag {
+        text-transform:uppercase;
+        font-size: 12px;
+        font-weight: bold;
+        display:block;
+        color: black;
+        line-height: 1.2;
+        text-decoration: none;
+    }
+
+    #search-results .result h2 {
+        margin: 0;
+        padding: 5px 0;
+    }
+
+    #search-results .result h2 a {
+        color: navy;
+    }
+
 </style>
 
 <div id="search-results">
@@ -84,6 +112,7 @@
                     {
                         <div class="result">
                             <h2>
+                                <span class="tag">@item.Category</span>
                                 <a href="@item.Url" target="_blank">@Html.Raw(item.Title)</a>
                             </h2>
                             <p>@Html.Raw(item.Precis)</p>

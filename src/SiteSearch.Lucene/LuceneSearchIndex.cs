@@ -78,7 +78,7 @@ namespace SiteSearch.Lucene
                             {
                                 var query = new TermQuery(
                                     new Term(termQuery.field.PropertyInfo.Name.ToLower(),
-                                        termQuery.value
+                                        escape(termQuery.value)
                                     )
                                 );
                                 mainQuery.Add(query, Occur.MUST);
@@ -86,7 +86,7 @@ namespace SiteSearch.Lucene
                             else
                             {
                                 var parser = new QueryParser(index.MATCH_LUCENE_VERSION, termQuery.field.PropertyInfo.Name.ToLower(), analyzer);
-                                var query = parser.Parse(termQuery.value);
+                                var query = parser.Parse(escape(termQuery.value));
                                 mainQuery.Add(query, Occur.MUST);
                             }
                         }
@@ -142,6 +142,17 @@ namespace SiteSearch.Lucene
 
                 return result;
             }
+        }
+
+        private static readonly string[] escapableCharacters = "\\ + - && || ! ( ) { } [ ] ^ \" ~ * ? :".Split(' ');
+        private static string escape(string txt)
+        {
+            foreach (var escapableCharacter in escapableCharacters)
+            {
+                txt = txt.Replace(escapableCharacter, $"\\{escapableCharacter}");
+            }
+
+            return txt;
         }
 
         private DirectoryTaxonomyReader createTaxonomyReader()
