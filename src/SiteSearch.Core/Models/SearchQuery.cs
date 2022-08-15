@@ -2,7 +2,7 @@
 
 namespace SiteSearch.Core.Models
 {
-    public class SearchQuery
+    public class SearchQuery<T>
     {
         public int Limit { get; set; } = 20;
         public int FacetMax { get; set; } = 0;

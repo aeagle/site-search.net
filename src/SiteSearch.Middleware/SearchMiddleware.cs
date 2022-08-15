@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using SiteSearch.Core.Extensions;
 using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
 using System;

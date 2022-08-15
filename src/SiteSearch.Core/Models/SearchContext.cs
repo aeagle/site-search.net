@@ -1,19 +1,28 @@
 ﻿using System;
+using System.Collections.Concurrent;
 
 namespace SiteSearch.Core.Models
 {
     public class SearchContext
     {
-        private dynamic results { get; set; }
+        private ConcurrentDictionary<Type, dynamic> results = new ConcurrentDictionary<Type, dynamic>();
 
         public void Set<T>(SearchResult<T> results)
         {
-            this.results = results ?? throw new ArgumentNullException(nameof(results));
+            this.results.AddOrUpdate(
+                typeof(T), 
+                results ?? throw new ArgumentNullException(nameof(results)),
+                (key, existing) => results ?? throw new ArgumentNullException(nameof(results))
+            );
         }
 
         public SearchResult<T> Get<T>()
         {
-            return results as SearchResult<T>;
+            if (results.TryGetValue(typeof(T), out var result))
+            {
+                return result as SearchResult<T>;
+            }
+            throw new InvalidOperationException($"No search results found for type {typeof(T).Name}");
         }
     }
 }

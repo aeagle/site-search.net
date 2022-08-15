@@ -45,7 +45,7 @@ namespace SiteSearch.Elastic
             throw new NotImplementedException();
         }
 
-        public Task<SearchResult<T>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)
+        public Task<SearchResult<T>> SearchAsync(SearchQuery<T> query, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

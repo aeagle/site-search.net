@@ -28,7 +28,7 @@ namespace SiteSearch.Lucene
         public LuceneSearchIndex() : base()
         {
             indexType = typeof(T).FullName.SafeFilename();
-            index = new LuceneIndex();
+            index = new LuceneIndex(options.IndexPath, indexType);
         }
 
         public LuceneSearchIndex(LuceneSearchIndexOptions options) : this()
@@ -40,16 +40,16 @@ namespace SiteSearch.Lucene
         {
             using (await index.WriterLock.WriterLockAsync(cancellationToken))
             {
-                using (getWriter()) { };
+                using (index.getWriter()) { };
             }
         }
 
         public IIngestionContext<T> StartUpdates()
         {
-            return new LuceneIngestionContext<T>(index, options, searchMetaData, indexType);
+            return new LuceneIngestionContext<T>(index, options, searchMetaData);
         }
 
-        public async Task<SearchResult<T>> SearchAsync(SearchQuery queryDefinition, CancellationToken cancellationToken = default)
+        public async Task<SearchResult<T>> SearchAsync(SearchQuery<T> queryDefinition, CancellationToken cancellationToken = default)
         {
             using (await index.WriterLock.ReaderLockAsync(cancellationToken))
             {
@@ -57,7 +57,7 @@ namespace SiteSearch.Lucene
                 List<T> hits = new List<T>();
                 var analyzer = index.SetupAnalyzer();
 
-                using (var writer = getWriter())
+                using (var writer = index.getWriter())
                 {
                     var mainQuery = new BooleanQuery();
 
@@ -101,22 +101,26 @@ namespace SiteSearch.Lucene
                     result.TotalHits = luceneResult.TotalHits;
                     result.Hits = hits;
 
-                    // Facets
+                    // Faceting
                     if (queryDefinition.Facets.Any())
                     {
                         FacetsConfig facetsConfig = new FacetsConfig();
                         FacetsCollector fc = new FacetsCollector();
                         FacetsCollector.Search(searcher, mainQuery, queryDefinition.FacetMax, fc);
-                        using (var taxonomyReader = new DirectoryTaxonomyReader(FSDirectory.Open(Path.Combine(options.IndexPath, indexType, "taxonomy"))))
+
+                        using (var taxonomyReader = createTaxonomyReader())
                         {
                             var facets = new FastTaxonomyFacetCounts(taxonomyReader, facetsConfig, fc);
                             foreach (var facet in queryDefinition.Facets)
                             {
                                 var facetGroup = new FacetGroup { Field = facet };
+
                                 facetGroup.Facets =
-                                    facets.GetTopChildren(queryDefinition.FacetMax, facet)?.LabelValues?
+                                    facets.GetTopChildren(queryDefinition.FacetMax, facet)?
+                                        .LabelValues?
                                         .Select(x => new Facet { Key = x.Label, Count = (long)x.Value })
                                         .ToArray() ?? new Facet[0];
+
                                 if (facetGroup.Facets.Any())
                                 {
                                     result.FacetGroups.Add(facetGroup);
@@ -130,25 +134,9 @@ namespace SiteSearch.Lucene
             }
         }
 
-        private LuceneSearchIndexWriter getWriter()
+        private DirectoryTaxonomyReader createTaxonomyReader()
         {
-            var analyzer = index.SetupAnalyzer();
-            return
-                new LuceneSearchIndexWriter
-                (
-                    new IndexWriter(
-                        FSDirectory.Open(
-                            Path.Combine(options.IndexPath, indexType)
-                        ),
-                        new IndexWriterConfig(index.MATCH_LUCENE_VERSION, analyzer)
-                    ),
-                    new DirectoryTaxonomyWriter(
-                        FSDirectory.Open(
-                            Path.Combine(options.IndexPath, indexType, "taxonomy")
-                        )
-                    ),
-                    new FacetsConfig()
-                );
+            return new DirectoryTaxonomyReader(FSDirectory.Open(Path.Combine(options.IndexPath, indexType, "taxonomy")));
         }
 
         private async Task<T> inflateDocument(Document document)

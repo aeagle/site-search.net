@@ -1,13 +1,10 @@
 ﻿using Lucene.Net.Documents;
 using Lucene.Net.Facet;
-using Lucene.Net.Facet.Taxonomy.Directory;
 using Lucene.Net.Index;
-using Lucene.Net.Store;
 using SiteSearch.Core.Interfaces;
 using SiteSearch.Lucene;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,25 +13,20 @@ namespace SiteSearch.Core.Models
 {
     public class LuceneIngestionContext<T> : IIngestionContext<T>, IDisposable where T : class, new()
     {
-        private readonly LuceneIndex index;
         private readonly LuceneSearchIndexOptions options;
         private readonly SearchMetaData searchMetaData;
-        private readonly string indexType;
         private readonly IDisposable writerLock;
         private readonly LuceneSearchIndexWriter writer;
         
         public LuceneIngestionContext(
             LuceneIndex index,
             LuceneSearchIndexOptions options,
-            SearchMetaData searchMetaData,
-            string indexType)
+            SearchMetaData searchMetaData)
         { 
-            this.index = index ?? throw new ArgumentNullException(nameof(index));
             this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.searchMetaData = searchMetaData ?? throw new ArgumentNullException(nameof(searchMetaData));
-            this.indexType = indexType ?? throw new ArgumentNullException(nameof(indexType));
             writerLock = index.WriterLock.WriterLock();
-            writer = getWriter();
+            writer = index.getWriter();
         }
 
         public async Task IndexAsync(T document, CancellationToken cancellationToken = default)
@@ -160,27 +152,6 @@ namespace SiteSearch.Core.Models
             }
 
             return doc;
-        }
-
-        private LuceneSearchIndexWriter getWriter()
-        {
-            var analyzer = index.SetupAnalyzer();
-            return
-                new LuceneSearchIndexWriter
-                (
-                    new IndexWriter(
-                        FSDirectory.Open(
-                            Path.Combine(options.IndexPath, indexType)
-                        ),
-                        new IndexWriterConfig(index.MATCH_LUCENE_VERSION, analyzer)
-                    ),
-                    new DirectoryTaxonomyWriter(
-                        FSDirectory.Open(
-                            Path.Combine(options.IndexPath, indexType, "taxonomy")
-                        )
-                    ),
-                    new FacetsConfig()
-                );
         }
     }
 }
