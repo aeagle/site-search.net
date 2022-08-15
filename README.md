@@ -41,9 +41,10 @@ public class SearchItem {
     [SearchAlias("p")]
     public string Precis { get; set; }
 
-    [Store]
-    [SearchAlias("b")]
-    public string Body { get; set; }
+    [Keyword, Store, TermFacet]
+    [SearchAlias("c")]
+    [DisplayName("News category")]
+    public string Category { get; set; }
 
     [Keyword, Store]
     public string Url { get; set; }
