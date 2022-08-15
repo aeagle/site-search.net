@@ -1,4 +1,5 @@
 using SiteSearch.Core.Models;
+using System.ComponentModel;
 
 public class SearchItem
 {
@@ -20,6 +21,7 @@ public class SearchItem
 
     [Keyword, Store, TermFacet]
     [SearchAlias("c")]
+    [DisplayName("News category")]
     public string Category { get; set; }
 
     [Keyword, Store]

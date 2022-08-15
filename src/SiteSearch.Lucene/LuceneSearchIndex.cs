@@ -12,6 +12,7 @@ using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -25,15 +26,15 @@ namespace SiteSearch.Lucene
         private readonly LuceneSearchIndexOptions options;
         private readonly LuceneIndex index;
 
-        public LuceneSearchIndex() : base()
+        private LuceneSearchIndex() : base()
         {
             indexType = typeof(T).FullName.SafeFilename();
-            index = new LuceneIndex(options.IndexPath, indexType);
         }
 
         public LuceneSearchIndex(LuceneSearchIndexOptions options) : this()
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
+            index = new LuceneIndex(options.IndexPath, indexType);
         }
 
         public async Task CreateIndexAsync(CancellationToken cancellationToken = default)
@@ -49,11 +50,18 @@ namespace SiteSearch.Lucene
             return new LuceneIngestionContext<T>(index, options, searchMetaData);
         }
 
+        public SearchQuery<T> CreateSearchQuery(NameValueCollection criteria)
+        {
+            return new SearchQuery<T>(this, criteria);
+        }
+
         public async Task<SearchResult<T>> SearchAsync(SearchQuery<T> queryDefinition, CancellationToken cancellationToken = default)
         {
             using (await index.WriterLock.ReaderLockAsync(cancellationToken))
             {
                 var result = new SearchResult<T>();
+                result.CurrentCriteria = queryDefinition.Criteria;
+
                 List<T> hits = new List<T>();
                 var analyzer = index.SetupAnalyzer();
 
@@ -113,12 +121,14 @@ namespace SiteSearch.Lucene
                             var facets = new FastTaxonomyFacetCounts(taxonomyReader, facetsConfig, fc);
                             foreach (var facet in queryDefinition.Facets)
                             {
-                                var facetGroup = new FacetGroup { Field = facet };
+                                var field = searchMetaData.Fields[facet];
+                                var facetGroup = new FacetGroup(field, result.CurrentCriteria.Criteria);
 
                                 facetGroup.Facets =
                                     facets.GetTopChildren(queryDefinition.FacetMax, facet)?
                                         .LabelValues?
-                                        .Select(x => new Facet { Key = x.Label, Count = (long)x.Value })
+                                        .Select(x => new Facet(facetGroup) { Key = x.Label, DisplayName = x.Label, Count = (long)x.Value })
+                                        .Where(x => x.Count != result.TotalHits)
                                         .ToArray() ?? new Facet[0];
 
                                 if (facetGroup.Facets.Any())

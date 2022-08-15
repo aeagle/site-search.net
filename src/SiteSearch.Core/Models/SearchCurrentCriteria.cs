@@ -9,11 +9,11 @@ namespace SiteSearch.Core.Models
 {
     public class SearchCurrentCriteria<T>
     {
-        private readonly NameValueCollection criteria;
+        public NameValueCollection Criteria { get; private set; }
 
         public SearchCurrentCriteria(ISearchIndex<T> searchIndex, NameValueCollection criteria)
         {
-            this.criteria = criteria ?? throw new ArgumentNullException(nameof(criteria));
+            Criteria = criteria ?? throw new ArgumentNullException(nameof(criteria));
 
             Limit = criteria["ps"]?.ParseInt() ?? 10;
 
@@ -33,28 +33,6 @@ namespace SiteSearch.Core.Models
 
         public int? Limit { get; set; }
         public IList<SearchFieldCriteria> FieldCriteria { get; set; } = new List<SearchFieldCriteria>();
-
-        public SearchQuery<T> GetSearchQuery()
-        {
-            var queryDefinition = new SearchQuery<T>();
-            queryDefinition.FacetOn(x => x.Field("category"), 100);
-
-            if (Limit.HasValue)
-            {
-                queryDefinition = queryDefinition.Limit(Limit.Value);
-            }
-
-            foreach (var field in FieldCriteria)
-            {
-                queryDefinition =
-                    queryDefinition.TermQuery(
-                        field.Field,
-                        field.Value
-                    );
-            }
-
-            return queryDefinition;
-        }
 
         public string GetCriteriaValueByAlias(string alias) =>
             FieldCriteria.FirstOrDefault(x => x.Field.Alias == alias)?.Value;

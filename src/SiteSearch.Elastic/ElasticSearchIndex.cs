@@ -5,6 +5,7 @@ using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +18,7 @@ namespace SiteSearch.Elastic
 
         public ElasticSearchIndex() : base()
         {
-            indexType = typeof(T).AssemblyQualifiedName.SafeFilename();
+            indexType = typeof(T).FullName.SafeFilename();
         }
 
         public ElasticSearchIndex(IElasticClient elasticClient) : this()
@@ -26,6 +27,11 @@ namespace SiteSearch.Elastic
         }
 
         public Task CreateIndexAsync(CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public SearchQuery<T> CreateSearchQuery(NameValueCollection criteria)
         {
             throw new NotImplementedException();
         }

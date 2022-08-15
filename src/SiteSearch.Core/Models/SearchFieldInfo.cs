@@ -10,5 +10,6 @@ namespace SiteSearch.Core.Models
         public bool Store { get; set; }
         public bool Facet { get; set; }
         public string Alias { get; set; }
+        public string DisplayName { get; set; }
     }
 }

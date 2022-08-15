@@ -23,16 +23,10 @@ namespace SiteSearch.Middleware
         public async Task InvokeAsync(HttpContext context, SearchContext searchContext)
         {
             // Extract criteria from query string
-            var currentCriteria = 
-                new SearchCurrentCriteria<T>(
-                    searchIndex, 
-                    HttpUtility.ParseQueryString(context.Request.QueryString.Value)
-                );
-            var searchQuery = currentCriteria.GetSearchQuery();
+            var searchQuery = searchIndex.CreateSearchQuery(HttpUtility.ParseQueryString(context.Request.QueryString.Value));
 
             // Do search
             var result = await searchIndex.SearchAsync(searchQuery);
-            result.CurrentCriteria = currentCriteria;
 
             // Store result in search context
             searchContext.Set(result);

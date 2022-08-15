@@ -3,6 +3,7 @@ using SiteSearch.Core.Extensions;
 using System.Reflection;
 using System.Collections.Concurrent;
 using System;
+using System.ComponentModel;
 
 namespace SiteSearch.Core.Utils
 {
@@ -33,7 +34,8 @@ namespace SiteSearch.Core.Utils
                                     Keyword = property.HasAttribute<KeywordAttribute>(),
                                     Store = property.HasAttribute<StoreAttribute>(),
                                     Facet = property.HasAttribute<TermFacetAttribute>(),
-                                    Alias = property.GetCustomAttribute<SearchAliasAttribute>()?.Alias
+                                    Alias = property.GetCustomAttribute<SearchAliasAttribute>()?.Alias,
+                                    DisplayName = property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName
                                 }
                             );
                         }
