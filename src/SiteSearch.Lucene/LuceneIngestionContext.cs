@@ -43,9 +43,6 @@ namespace SiteSearch.Core.Models
             }
             var doc = writer.FacetsConfig.Build(writer.TaxonomyWriter, docToIndex);
             writer.DocsWriter.UpdateDocument(new Term("_id", docToIndex.Get("_id")), doc);
-
-            writer.DocsWriter.Flush(triggerMerge: false, applyAllDeletes: false);
-            writer.DocsWriter.Commit();
         }
 
         public async Task IndexAsync(IEnumerable<T> documents, CancellationToken cancellationToken = default)
@@ -126,7 +123,7 @@ namespace SiteSearch.Core.Models
                 var metaData = field.Value;
                 var value = metaData.PropertyInfo.GetValue(document);
 
-                if (value != default)
+                if (value != null)
                 {
                     if (metaData.Keyword)
                     {

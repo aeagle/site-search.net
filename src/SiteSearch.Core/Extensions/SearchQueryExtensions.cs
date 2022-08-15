@@ -11,10 +11,15 @@ namespace SiteSearch.Core.Extensions
             return query;
         }
 
-        public static SearchQuery<T> FacetOn<T>(this SearchQuery<T> query, Action<FacetDescriptor<T>> descriptor, int max = 100)
+        public static SearchQuery<T> FacetOn<T>(this SearchQuery<T> query, Action<FacetDescriptor<T>> descriptor)
         {
-            descriptor(new FacetDescriptor<T>(query));
-            query.FacetMax = max;
+            descriptor(new FacetDescriptor<T>(query, query.searchIndex));
+            return query;
+        }
+
+        public static SearchQuery<T> FacetOn<T>(this SearchQuery<T> query, SearchFieldInfo field, int maxFacets = 20)
+        {
+            query.FacetOn.Add((field, maxFacets));
             return query;
         }
 

@@ -26,7 +26,7 @@ namespace SiteSearch.Core.Utils
                         if (property.CanRead && !property.IsPropertyACollection())
                         {
                             result.Fields.Add(
-                                property.Name.ToLower(),
+                                property.Name,
                                 new SearchFieldInfo
                                 {
                                     PropertyInfo = property,

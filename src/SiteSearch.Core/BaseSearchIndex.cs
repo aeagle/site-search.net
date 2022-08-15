@@ -23,5 +23,10 @@ namespace SiteSearch.Core
         {
             return searchAliases.TryGetValue(alias, out var field) ? field : null;
         }
+
+        public SearchFieldInfo GetSearchFieldByName(string fieldName)
+        {
+            return searchMetaData.Fields.TryGetValue(fieldName, out var field) ? field : null;
+        }
     }
 }

@@ -12,6 +12,7 @@ namespace SiteSearch.Core.Models
             this.group = group ?? throw new ArgumentNullException(nameof(group));
         }
 
+        public string Name => DisplayName ?? Key;
         public string Key { get; set; }
         public string DisplayName { get; set; }
         public long Count { get; set; }

@@ -15,7 +15,7 @@ namespace SiteSearch.Core.Models
             this.currentCriteria = currentCriteria ?? throw new ArgumentNullException(nameof(currentCriteria));
         }
 
-        public string Field => fieldInfo.PropertyInfo.Name;
+        public string Field => fieldInfo.Name;
         public string DisplayName => fieldInfo.DisplayName ?? Field;
         public IList<Facet> Facets { get; set; } = new List<Facet>();
 

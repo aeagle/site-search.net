@@ -19,6 +19,7 @@
 
     #search-results input[type='text'] {
         width: 100%;
+        font-size: 18px;
     }
     #search-results .layout {
         display: flex;
@@ -34,7 +35,7 @@
     }
 
     #search-results .search-facets h2 {
-        margin-top: 0;
+        margin-top: -5px;
         padding-top: 0;
     }
 
@@ -66,17 +67,28 @@
         color: navy;
     }
 
+    .mui-form--inline {
+        margin-left: 150px;
+        margin-right: 150px;
+        margin-bottom: 25px;
+    }
+
+    .publication-date {
+        font-weight: bold;
+    }
+
 </style>
 
 <div id="search-results">
-    <div class="mui-panel">
+    <h1>Super-duper search</h1>
+
     <form class="mui-form--inline">
         <div class="mui-textfield">
             <input type="text" autofocus name="q" value="@Model.CurrentCriteria.GetCriteriaValueByAlias("q")" placeholder="Search ..." style="padding: 5px 10px;" />
         </div>
         <button type="submit" class="mui-btn mui-btn--primary">Search</button>
     </form>
-    </div>
+
     <div class="layout">
         <div class="search-facets">
             @if (Model.CurrentCriteria.FieldCriteria.Any())
@@ -85,7 +97,7 @@
                 <ul>
                     @foreach (var criteria in Model.CurrentCriteria.FieldCriteria)
                     {
-                        <li>@(criteria.Field.DisplayName ?? criteria.Field.PropertyInfo.Name): @criteria.Value <a href="@criteria.RemoveUrl">X</a></li>
+                        <li>@(criteria.Name): @criteria.Value <a href="@criteria.RemoveUrl">X</a></li>
                     }
                 </ul>
             }
@@ -95,7 +107,7 @@
                 <ul>
                 @foreach (var facet in facetGroup.Facets)
                 {
-                    <li><a href="@facet.DrillDownUrl">@facet.DisplayName</a> (@facet.Count)</li>
+                    <li><a href="@facet.DrillDownUrl">@facet.Name</a> (@facet.Count)</li>
                 }
                 </ul>
             }
@@ -115,6 +127,7 @@
                                 <span class="tag">@item.Category</span>
                                 <a href="@item.Url" target="_blank">@Html.Raw(item.Title)</a>
                             </h2>
+                            <div class="publication-date">@item.PublicationDate.ToString("dd MMM yyyy")</div>
                             <p>@Html.Raw(item.Precis)</p>
                         </div>
                         <hr />

@@ -1,4 +1,5 @@
 ﻿using SiteSearch.Core.Extensions;
+using SiteSearch.Core.Interfaces;
 using System;
 using System.Linq.Expressions;
 
@@ -6,22 +7,18 @@ namespace SiteSearch.Core.Models
 {
     public class FacetDescriptor<T>
     {
-        private readonly SearchQuery<T> searchQuery;
+        private readonly ISearchIndex<T> searchIndex;
+        private readonly ISearchFacetOnConfig config;
 
-        public FacetDescriptor(SearchQuery<T> searchQuery)
+        public FacetDescriptor(ISearchFacetOnConfig config, ISearchIndex<T> searchIndex)
         {
-            this.searchQuery = searchQuery;
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
         }
 
-        public FacetDescriptor<T> Field(string field)
+        public FacetDescriptor<T> Field(Expression<Func<T, object>> field, int maxFacets = 20)
         {
-            searchQuery.Facets.Add(field);
-            return this;
-        }
-
-        public FacetDescriptor<T> Field(Expression<Func<T, object>> field)
-        {
-            searchQuery.Facets.Add(field.GetPropertyInfo().Name);
+            config.FacetOn.Add((searchIndex.GetSearchFieldByName(field.GetPropertyInfo().Name), maxFacets));
             return this;
         }
     }

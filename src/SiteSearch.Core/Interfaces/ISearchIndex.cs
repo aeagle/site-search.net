@@ -9,8 +9,10 @@ namespace SiteSearch.Core.Interfaces
     {
         Task CreateIndexAsync(CancellationToken cancellationToken = default);
         Task<SearchResult<T>> SearchAsync(SearchQuery<T> query, CancellationToken cancellationToken = default);
-        SearchFieldInfo GetSearchFieldByAlias(string alias);
         SearchQuery<T> CreateSearchQuery(NameValueCollection criteria);
         IIngestionContext<T> StartUpdates();
+
+        SearchFieldInfo GetSearchFieldByAlias(string alias);
+        SearchFieldInfo GetSearchFieldByName(string fieldName);
     }
 }

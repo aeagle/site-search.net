@@ -76,16 +76,12 @@ namespace SiteSearch.Lucene
                         {
                             if (termQuery.field.Keyword)
                             {
-                                var query = new TermQuery(
-                                    new Term(termQuery.field.PropertyInfo.Name.ToLower(),
-                                        escape(termQuery.value)
-                                    )
-                                );
+                                var query = new TermQuery(new Term(termQuery.field.Name, escape(termQuery.value)));
                                 mainQuery.Add(query, Occur.MUST);
                             }
                             else
                             {
-                                var parser = new QueryParser(index.MATCH_LUCENE_VERSION, termQuery.field.PropertyInfo.Name.ToLower(), analyzer);
+                                var parser = new QueryParser(index.MATCH_LUCENE_VERSION, termQuery.field.Name, analyzer);
                                 var query = parser.Parse(escape(termQuery.value));
                                 mainQuery.Add(query, Occur.MUST);
                             }
@@ -110,22 +106,21 @@ namespace SiteSearch.Lucene
                     result.Hits = hits;
 
                     // Faceting
-                    if (queryDefinition.Facets.Any())
+                    if (queryDefinition.FacetOn.Any())
                     {
                         FacetsConfig facetsConfig = new FacetsConfig();
                         FacetsCollector fc = new FacetsCollector();
-                        FacetsCollector.Search(searcher, mainQuery, queryDefinition.FacetMax, fc);
+                        FacetsCollector.Search(searcher, mainQuery, queryDefinition.FacetOn.Max(x => x.maxFacets), fc);
 
                         using (var taxonomyReader = createTaxonomyReader())
                         {
                             var facets = new FastTaxonomyFacetCounts(taxonomyReader, facetsConfig, fc);
-                            foreach (var facet in queryDefinition.Facets)
+                            foreach (var facet in queryDefinition.FacetOn)
                             {
-                                var field = searchMetaData.Fields[facet];
-                                var facetGroup = new FacetGroup(field, result.CurrentCriteria.Criteria);
+                                var facetGroup = new FacetGroup(facet.field, result.CurrentCriteria.Criteria);
 
                                 facetGroup.Facets =
-                                    facets.GetTopChildren(queryDefinition.FacetMax, facet)?
+                                    facets.GetTopChildren(facet.maxFacets, facet.field.Name)?
                                         .LabelValues?
                                         .Select(x => new Facet(facetGroup) { Key = x.Label, DisplayName = x.Label, Count = (long)x.Value })
                                         .Where(x => x.Count != result.TotalHits)

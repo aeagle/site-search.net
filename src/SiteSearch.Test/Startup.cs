@@ -14,6 +14,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SiteSearch.Core.Extensions;
 
 namespace SiteSearch.Test
 {
@@ -29,23 +30,23 @@ namespace SiteSearch.Test
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLuceneSearch<SearchItem>((ctx) =>
-            {
-                var hostingEnvironment = ctx.GetRequiredService<IWebHostEnvironment>();
-                return Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
-            });
+            string getRootIndexPath(IWebHostEnvironment hostingEnvironment) =>
+                Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
 
+            services.AddLuceneSearch<SearchItem>((ctx) => getRootIndexPath(ctx.GetRequiredService<IWebHostEnvironment>()));
             services.AddHostedService<CreateSearchIndex>();
-            services.AddHostedService<SetupSearchIndex>(); 
+            services.AddHostedService((ctx) => 
+                new SetupSearchIndex(
+                    ctx.GetRequiredService<ISearchIndex<SearchItem>>(),
+                    ctx.GetRequiredService<IWebHostEnvironment>().ContentRootPath
+                )
+            );
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(
-            IApplicationBuilder app, 
-            IWebHostEnvironment env,
-            ISearchIndex<SearchItem> searchIndex)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {   
             if (env.IsDevelopment())
             {
@@ -65,7 +66,12 @@ namespace SiteSearch.Test
 
             app.UseAuthorization();
 
-            app.UseSearch<SearchItem>("/search");
+            app.UseSearch<SearchItem>(
+                "/search",
+                opts => opts
+                    .FacetOn(x => x.Field(f => f.Category))
+                    .FacetOn(x => x.Field(f => f.MonthYear))
+            );
 
             app.UseEndpoints(endpoints =>
             {
@@ -99,10 +105,12 @@ namespace SiteSearch.Test
     public class SetupSearchIndex : BackgroundService
     {
         private readonly ISearchIndex<SearchItem> searchIndex;
+        private readonly string appRootPath;
 
-        public SetupSearchIndex(ISearchIndex<SearchItem> searchIndex)
+        public SetupSearchIndex(ISearchIndex<SearchItem> searchIndex, string appRootPath)
         {
             this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+            this.appRootPath = appRootPath ?? throw new ArgumentNullException(nameof(appRootPath));
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -126,7 +134,7 @@ namespace SiteSearch.Test
 
             using (var context = searchIndex.StartUpdates())
             {
-                using (var stream = File.OpenRead(@"C:\Projects\site-search.net\src\SiteSearch.Test\News_Category_Dataset_v2.json"))
+                using (var stream = File.OpenRead($@"{appRootPath}\News_Category_Dataset_v2.json"))
                 using (var sr = new StreamReader(stream))
                 {
                     var items = JsonExtensions.WalkObjects<NewsArticle>(sr);
@@ -136,6 +144,7 @@ namespace SiteSearch.Test
                         var testItem = new SearchItem
                         {
                             Id = hash($"{item.Headline} {item.Link}"),
+                            PublicationDate = item.Date,
                             Url = item.Link,
                             Title = item.Headline,
                             Category = item.Category,
@@ -145,7 +154,7 @@ namespace SiteSearch.Test
                         await context.IndexAsync(testItem);
                         processed++;
 
-                        if (processed > 100)
+                        if (processed == 10000)
                         {
                             break;
                         }

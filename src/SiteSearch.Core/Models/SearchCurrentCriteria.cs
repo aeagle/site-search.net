@@ -46,7 +46,9 @@ namespace SiteSearch.Core.Models
                 this.currentCriteria = currentCriteria ?? throw new ArgumentNullException(nameof(currentCriteria));
             }
 
+            public string Name => DisplayName ?? Field.DisplayName ?? Field.Name;
             public SearchFieldInfo Field { get; set; }
+            public string DisplayName { get; set; }
             public string Value { get; set; }
             public string RemoveUrl => $"?{currentCriteria.RemoveCriteria(Field.Alias, Value).AsQueryString()}";
         }

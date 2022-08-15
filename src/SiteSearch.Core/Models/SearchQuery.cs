@@ -1,24 +1,27 @@
 ﻿using SiteSearch.Core.Extensions;
 using SiteSearch.Core.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 
 namespace SiteSearch.Core.Models
 {
-    public class SearchQuery<T>
+    public class SearchQuery<T> : ISearchFacetOnConfig
     {
+        protected readonly internal ISearchIndex<T> searchIndex;
+
         public SearchCurrentCriteria<T> Criteria { get; private set; }
 
         public SearchQuery(ISearchIndex<T> searchIndex, NameValueCollection baseCriteria)
         {
+            this.searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+
             Criteria = new SearchCurrentCriteria<T>(searchIndex, baseCriteria);
             setupCriteria(this);
         }
 
         private void setupCriteria(SearchQuery<T> queryDefinition)
         {
-            queryDefinition = queryDefinition.FacetOn(x => x.Field("category"));
-
             if (Criteria.Limit.HasValue)
             {
                 queryDefinition = queryDefinition.Limit(Criteria.Limit.Value);
@@ -35,8 +38,8 @@ namespace SiteSearch.Core.Models
         }
 
         public int Limit { get; set; } = 20;
-        public int FacetMax { get; set; } = 0;
+
         public IList<(SearchFieldInfo field, string value)> TermQueries { get; set; } = new List<(SearchFieldInfo, string)>();
-        public IList<string> Facets { get; set; } = new List<string>();
+        public IList<(SearchFieldInfo field, int maxFacets)> FacetOn { get; set; } = new List<(SearchFieldInfo field, int maxFacets)>();
     }
 }
