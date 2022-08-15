@@ -13,39 +13,35 @@ namespace SiteSearch.Core.Utils
 
         public static SearchMetaData GetMetaData<T>() where T : class
         {
-            if (!metaDataCache.TryGetValue(typeof(T), out var metadata))
-            {
-                return metaDataCache.GetOrAdd(
-                    typeof(T),
-                    (type) =>
+            return metaDataCache.GetOrAdd(
+                typeof(T),
+                (type) =>
+                {
+                    var result = new SearchMetaData();
+
+                    var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    foreach (var property in properties)
                     {
-                        var result = new SearchMetaData();
-
-                        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                        foreach (var property in properties)
+                        if (property.CanRead && !property.IsPropertyACollection())
                         {
-                            if (property.CanRead && !property.IsPropertyACollection())
-                            {
-                                result.Fields.Add(
-                                    property.Name.ToLower(),
-                                    new SearchFieldInfo
-                                    {
-                                        PropertyInfo = property,
-                                        Id = property.HasAttribute<IdAttribute>(),
-                                        Keyword = property.HasAttribute<KeywordAttribute>(),
-                                        Store = property.HasAttribute<StoreAttribute>(),
-                                        Facet = property.HasAttribute<TermFacetAttribute>(),
-                                        Alias = property.GetCustomAttribute<SearchAliasAttribute>()?.Alias
-                                    }
-                                );
-                            }
+                            result.Fields.Add(
+                                property.Name.ToLower(),
+                                new SearchFieldInfo
+                                {
+                                    PropertyInfo = property,
+                                    Id = property.HasAttribute<IdAttribute>(),
+                                    Keyword = property.HasAttribute<KeywordAttribute>(),
+                                    Store = property.HasAttribute<StoreAttribute>(),
+                                    Facet = property.HasAttribute<TermFacetAttribute>(),
+                                    Alias = property.GetCustomAttribute<SearchAliasAttribute>()?.Alias
+                                }
+                            );
                         }
-
-                        return result;
                     }
-                );
-            }
-            return metadata;
+
+                    return result;
+                }
+            );
         }
     }
 }
