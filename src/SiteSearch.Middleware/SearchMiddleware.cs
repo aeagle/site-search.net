@@ -4,6 +4,7 @@ using SiteSearch.Core.Interfaces;
 using SiteSearch.Core.Models;
 using System;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace SiteSearch.Middleware
 {
@@ -23,41 +24,15 @@ namespace SiteSearch.Middleware
         public async Task InvokeAsync(HttpContext context, SearchContext searchContext)
         {
             // Extract criteria from query string
-            var currentCriteria =
-                new SearchCurrentCriteria
-                {
-                    Limit = context.Request.Query["ps"].ParseInt()
-                };
-
-            var queryDefinition = new SearchQuery();
-            queryDefinition.FacetOn(x => x.Field("category"), 100);
-
-            if (currentCriteria.Limit.HasValue)
-            {
-                queryDefinition = queryDefinition.Limit(currentCriteria.Limit.Value);
-            }
-
-            foreach (var criteria in context.Request.Query)
-            {
-                var val = context.Request.Query[criteria.Key];
-                if (!string.IsNullOrEmpty(val))
-                {
-                    var field = searchIndex.GetSearchFieldByAlias(criteria.Key);
-                    if (field != null)
-                    {
-                        currentCriteria.FieldCriteria.Add(new SearchFieldCriteria { Field = field, Value = val });
-
-                        queryDefinition =
-                            queryDefinition.TermQuery(
-                                field,
-                                val
-                            );
-                    }
-                }
-            }
+            var currentCriteria = 
+                new SearchCurrentCriteria<T>(
+                    searchIndex, 
+                    HttpUtility.ParseQueryString(context.Request.QueryString.Value)
+                );
+            var searchQuery = currentCriteria.GetSearchQuery();
 
             // Do search
-            var result = await searchIndex.SearchAsync(queryDefinition);
+            var result = await searchIndex.SearchAsync(searchQuery);
             result.CurrentCriteria = currentCriteria;
 
             // Store result in search context

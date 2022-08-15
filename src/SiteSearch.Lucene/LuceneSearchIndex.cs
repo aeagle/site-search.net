@@ -27,7 +27,7 @@ namespace SiteSearch.Lucene
 
         public LuceneSearchIndex() : base()
         {
-            indexType = typeof(T).AssemblyQualifiedName.SafeFilename();
+            indexType = typeof(T).FullName.SafeFilename();
             index = new LuceneIndex();
         }
 

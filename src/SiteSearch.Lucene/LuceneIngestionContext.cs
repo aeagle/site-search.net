@@ -22,7 +22,7 @@ namespace SiteSearch.Core.Models
         private readonly string indexType;
         private readonly IDisposable writerLock;
         private readonly LuceneSearchIndexWriter writer;
-
+        
         public LuceneIngestionContext(
             LuceneIndex index,
             LuceneSearchIndexOptions options,

@@ -4,6 +4,7 @@
     {
         public string Key { get; set; }
         public long Count { get; set; }
+        public string DrillDownUrl { get; set; }
 
         public override string ToString()
         {
