@@ -73,11 +73,12 @@ public void ConfigureServices(IServiceCollection services)
 {
     ...
 
-    services.AddLuceneSearch<SearchItem>((ctx) =>
-    {
-        var hostingEnvironment = ctx.GetRequiredService<IWebHostEnvironment>();
-        return Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
-    });
+    string getRootIndexPath(IWebHostEnvironment hostingEnvironment) =>
+        Path.Combine(hostingEnvironment.ContentRootPath, "search-index");
+
+    services.AddLuceneSearch<SearchItem>((opts, ctx) => opts
+        .IndexPath(getRootIndexPath(ctx.GetRequiredService<IWebHostEnvironment>()))
+    );
 
     ...
 }
