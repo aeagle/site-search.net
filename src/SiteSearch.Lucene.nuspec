@@ -5,14 +5,14 @@
 		<title xmlns="">SiteSearch.Lucene</title>
 		<authors>Allan Eagle</authors>
 		<owners>Allan Eagle</owners>
-		<projectUrl>https://github.com/aeagle/blazor-spaces</projectUrl>
+		<projectUrl>https://github.com/aeagle/site-search.net</projectUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>Lucene file-based in-process implementation for SiteSearch.Core</description>
 		<tags>Full-text Search Lucene Faceting Paging Sorting</tags>
-		<version>0.0.1-beta.1</version>
+		<version>0.0.1-beta.2</version>
 		<dependencies>
 			<group targetFramework="netstandard2.0">
-				<dependency id="SiteSearch" version="0.0.1-beta.1" />
+				<dependency id="SiteSearch" version="0.0.1-beta.2" />
 				<dependency id="Lucene.Net" version="4.8.0-beta00016" />
 				<dependency id="Lucene.Net.Analysis.Common" version="4.8.0-beta00016" />
 				<dependency id="Lucene.Net.Facet" version="4.8.0-beta00016" />

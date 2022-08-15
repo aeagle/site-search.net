@@ -9,7 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Full text search engine abstraction and AspNetCore middleware allowing search interfaces to be built easily</description>
     <tags>Full-text Search Lucene Faceting Paging Sorting</tags>
-    <version>0.0.1-beta.1</version>
+    <version>0.0.1-beta.2</version>
     <dependencies>
 		<group targetFramework="netstandard2.0">
 			<dependency id="Microsoft.Extensions.Primitives" version="6.0.0" />

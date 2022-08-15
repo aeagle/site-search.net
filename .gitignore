@@ -29,3 +29,4 @@ obj
 **/*.css
 **/search-index
 **/News_Category_Dataset_v2.json
+**/*.nupkg
