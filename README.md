@@ -23,9 +23,9 @@ Also, because all search functionality is abstracted a different implementation 
 
 ## Aims
 
-- To provide an easy way to map query string values to search criteria
-- Allow flexibility in ingestion of content either offline or online via background jobs
 - Provide out of the box common sorting, paging and faceting functionality found on most search interfaces
+- To provide middleware that eases driving a search interface
+- Allow flexibility in ingestion of content either offline or online via background jobs
 
 ## Basic usage
 
